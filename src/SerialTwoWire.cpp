@@ -62,7 +62,9 @@ uint8_t SerialTwoWire::_waitForResponse() {
     }
     unsigned long timeout = millis() + _timeout;
     do {
+#if defined(ESP8266) || defined(ESP32)
         delay(1);
+#endif
         _onReadSerial();
     } while(millis() < timeout && !available());
 
