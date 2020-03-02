@@ -1,0 +1,22 @@
+
+{
+    "name": "Arduino I2C UART Bridge",
+    "description": "I2C protocol over serial port",
+    "keywords": "serial uart i2c bridge",
+    "authors": {
+        "name": "sascha_lammers@gmx.de",
+        "maintainer": true
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/sascha432/i2c_uart_bridge"
+    },
+    "version": "0.0.1",
+    "license": "GPL-3.0",
+    "frameworks": "arduino",
+    "platforms": [
+        "atmelavr",
+        "espressif8266",
+        "espressif32"
+    ]
+}

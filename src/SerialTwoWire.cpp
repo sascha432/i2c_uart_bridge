@@ -14,8 +14,17 @@ void serialEvent() {
 
 #endif
 
-const char _i2c_transmit_cmd[] PROGMEM = { "+I2CT=" };
-const char _i2c_request_cmd[] PROGMEM = { "+I2CR=" };
+// prefix lengths are limited to 16 characters
+
+#ifndef I2C_OVER_UART_PREFIX_TRANSMIT
+#define I2C_OVER_UART_PREFIX_TRANSMIT           "+I2CT="
+#endif
+#ifndef I2C_OVER_UART_PREFIX_REQUEST
+#define I2C_OVER_UART_PREFIX_REQUEST            "+I2CR="
+#endif
+
+static const char _i2c_transmit_cmd[] PROGMEM = { I2C_OVER_UART_PREFIX_TRANSMIT };
+static const char _i2c_request_cmd[] PROGMEM = { I2C_OVER_UART_PREFIX_REQUEST };
 
 SerialTwoWire::SerialTwoWire() : SerialTwoWire(Serial) {
 }
@@ -23,7 +32,7 @@ SerialTwoWire::SerialTwoWire() : SerialTwoWire(Serial) {
 SerialTwoWire::SerialTwoWire(Stream &serial) : _serial(serial) {
 #ifndef SERIALTWOWIRE_NO_GLOBALS
     _onReadSerial = serialEvent;
-#else 
+#else
     _onReadSerial = nullptr;
 #endif
 }
@@ -104,49 +113,45 @@ void SerialTwoWire::newLine() {
         _processData();
     }
     _command = NONE;
-    _pos = 0;
+    _buffer = String();
 }
 
 
 void SerialTwoWire::feed(uint8_t data) {
 
     if (data == '\r') {
-    } 
+    }
     else if (data == '\n') {
         newLine();
     }
-    else if (_pos == 0xff) {
-        // skip line state
+    else if (_command == STOP_LINE) {
+        // skip rest of the line
     }
     else if (_command != NONE) {
         if (data != ',') {
-            _buffer[_pos++] = data;
-            if (_pos == 2) {
+            _buffer += data;
+            if (_buffer.length() == 2) {
                 _addBuffer();
             }
         }
-    } 
-    else if (_pos < 6 && (_pos > 0 || !isspace(data))) {
-        _buffer[_pos++] = data;
-        if (_pos == 6) {
-            _buffer[_pos] = 0;
-            if (strcasecmp_P(_buffer, _i2c_transmit_cmd) == 0) {
-                _in.clear();
-                _command = TRANSMIT;
-                _pos = 0;
-            } 
-            else if (strcasecmp_P(_buffer, _i2c_request_cmd) == 0) {
-                _in.clear();
-                _command = REQUEST;
-                _pos = 0;
-            } 
+    }
+    else if ((_buffer.length() > 0 || !isspace(data)) && _buffer.length() < 16) {
+        _buffer += data;
+        if (strcasecmp_P(_buffer.c_str(), _i2c_transmit_cmd) == 0) {
+            _in.clear();
+            _command = TRANSMIT;
+            _buffer = String();
+        }
+        else if (strcasecmp_P(_buffer.c_str(), _i2c_request_cmd) == 0) {
+            _in.clear();
+            _command = REQUEST;
+            _buffer = String();
         }
     }
 }
 
 void SerialTwoWire::stopLine() {
-    _command = NONE;
-    _pos = 0xff;
+    _command = STOP_LINE;
 }
 
 void SerialTwoWire::onReceive(onReceiveCallback callback) {
@@ -162,28 +167,27 @@ void SerialTwoWire::onReadSerial(onReadSerialCallback callback) {
 }
 
 void SerialTwoWire::_addBuffer() {
-    if (_pos == 2) {
+    if (_buffer.length() == 2) {
         unsigned long data;
-        _buffer[_pos] = 0;
-        data = strtoul(_buffer, 0, 16);
+        data = strtoul(_buffer.c_str(), 0, 16);
         if (_in.length() == 0 && data != _address && data != _recvAddress) {
             stopLine();
         } else {
             _in.write((uint8_t)data);
-            _pos = 0;
+            _buffer = String();
         }
     }
 }
 
 void SerialTwoWire::_processData() {
-    if (_command != NONE && _in.length() > 1) {
+    if (_in.length() > 1) {
         if (_command == TRANSMIT) {
             if (_in.read() == _address) {
                 _onReceive(_in.length());
             } else {
                 _recvAddress = 0;
             }
-        } 
+        }
         else if (_command == REQUEST) {
             uint8_t len = _in.charAt(1);
             beginTransmission(_address);
