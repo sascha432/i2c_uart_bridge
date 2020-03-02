@@ -24,77 +24,83 @@
     <ClCompile Include="msvc_win32.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="LiquidCrystal_I2C\LiquidCrystal_I2C.cpp">
+    <ClCompile Include="lib\esp8266-kfc-fw\lib\KFCBaseLibrary\src\mock\EEPROM.cpp">
+      <Filter>Source Files\KFCBaseLibrary</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\esp8266-kfc-fw\lib\KFCBaseLibrary\src\mock\ESP8266HttpClient.cpp">
+      <Filter>Source Files\KFCBaseLibrary</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\esp8266-kfc-fw\lib\KFCBaseLibrary\src\mock\FS.cpp">
+      <Filter>Source Files\KFCBaseLibrary</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\esp8266-kfc-fw\lib\KFCBaseLibrary\src\mock\Print.cpp">
+      <Filter>Source Files\KFCBaseLibrary</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\esp8266-kfc-fw\lib\KFCBaseLibrary\src\mock\Serial.cpp">
+      <Filter>Source Files\KFCBaseLibrary</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\esp8266-kfc-fw\lib\KFCBaseLibrary\src\mock\SPI.cpp">
+      <Filter>Source Files\KFCBaseLibrary</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\esp8266-kfc-fw\lib\KFCBaseLibrary\src\mock\Stream.cpp">
+      <Filter>Source Files\KFCBaseLibrary</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\esp8266-kfc-fw\lib\KFCBaseLibrary\src\mock\StreamString.cpp">
+      <Filter>Source Files\KFCBaseLibrary</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\esp8266-kfc-fw\lib\KFCBaseLibrary\src\mock\WiFi.cpp">
+      <Filter>Source Files\KFCBaseLibrary</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\esp8266-kfc-fw\lib\KFCBaseLibrary\src\mock\WiFiUDP.cpp">
+      <Filter>Source Files\KFCBaseLibrary</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\esp8266-kfc-fw\lib\KFCBaseLibrary\src\mock\Wire.cpp">
+      <Filter>Source Files\KFCBaseLibrary</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\esp8266-kfc-fw\lib\KFCBaseLibrary\src\mock\WString.cpp">
+      <Filter>Source Files\KFCBaseLibrary</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\esp8266-kfc-fw\lib\KFCBaseLibrary\src\PrintString.cpp">
+      <Filter>Source Files\KFCBaseLibrary</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\esp8266-kfc-fw\lib\KFCBaseLibrary\src\Arduino_compat.cpp">
+      <Filter>Source Files\KFCBaseLibrary</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\esp8266-kfc-fw\lib\KFCBaseLibrary\src\Buffer.cpp">
+      <Filter>Source Files\KFCBaseLibrary</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\esp8266-kfc-fw\lib\KFCBaseLibrary\src\BufferStream.cpp">
+      <Filter>Source Files\KFCBaseLibrary</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\esp8266-kfc-fw\lib\KFCBaseLibrary\src\crc16.cpp">
+      <Filter>Source Files\KFCBaseLibrary</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\esp8266-kfc-fw\lib\KFCBaseLibrary\src\debug_helper.cpp">
+      <Filter>Source Files\KFCBaseLibrary</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\esp8266-kfc-fw\lib\KFCBaseLibrary\src\DumpBinary.cpp">
+      <Filter>Source Files\KFCBaseLibrary</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\esp8266-kfc-fw\lib\KFCBaseLibrary\src\dyn_bitset.cpp">
+      <Filter>Source Files\KFCBaseLibrary</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\esp8266-kfc-fw\lib\KFCBaseLibrary\src\esp32_compat.cpp">
+      <Filter>Source Files\KFCBaseLibrary</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\esp8266-kfc-fw\lib\KFCBaseLibrary\src\esp8266_compat.cpp">
+      <Filter>Source Files\KFCBaseLibrary</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\esp8266-kfc-fw\lib\KFCBaseLibrary\src\MicrosTimer.cpp">
+      <Filter>Source Files\KFCBaseLibrary</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\esp8266-kfc-fw\lib\KFCBaseLibrary\src\MillisTimer.cpp">
+      <Filter>Source Files\KFCBaseLibrary</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\esp8266-kfc-fw\lib\KFCBaseLibrary\src\misc.cpp">
+      <Filter>Source Files\KFCBaseLibrary</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\LiquidCrystal_I2C\LiquidCrystal_I2C.cpp">
       <Filter>Source Files\LiquidCrystal_I2C</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\kfc_fw\lib\KFCBaseLibrary\src\mock\WString.cpp">
-      <Filter>Source Files\KFCBaseLibrary</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\kfc_fw\lib\KFCBaseLibrary\src\mock\EEPROM.cpp">
-      <Filter>Source Files\KFCBaseLibrary</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\kfc_fw\lib\KFCBaseLibrary\src\mock\FS.cpp">
-      <Filter>Source Files\KFCBaseLibrary</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\kfc_fw\lib\KFCBaseLibrary\src\mock\Serial.cpp">
-      <Filter>Source Files\KFCBaseLibrary</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\kfc_fw\lib\KFCBaseLibrary\src\mock\Stream.cpp">
-      <Filter>Source Files\KFCBaseLibrary</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\kfc_fw\lib\KFCBaseLibrary\src\mock\StreamString.cpp">
-      <Filter>Source Files\KFCBaseLibrary</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\kfc_fw\lib\KFCBaseLibrary\src\mock\WiFi.cpp">
-      <Filter>Source Files\KFCBaseLibrary</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\kfc_fw\lib\KFCBaseLibrary\src\mock\WiFiUDP.cpp">
-      <Filter>Source Files\KFCBaseLibrary</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\kfc_fw\lib\KFCBaseLibrary\src\PrintString.cpp">
-      <Filter>Source Files\KFCBaseLibrary</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\kfc_fw\lib\KFCBaseLibrary\src\Arduino_compat.cpp">
-      <Filter>Source Files\KFCBaseLibrary</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\kfc_fw\lib\KFCBaseLibrary\src\Buffer.cpp">
-      <Filter>Source Files\KFCBaseLibrary</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\kfc_fw\lib\KFCBaseLibrary\src\BufferStream.cpp">
-      <Filter>Source Files\KFCBaseLibrary</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\kfc_fw\lib\KFCBaseLibrary\src\crc16.cpp">
-      <Filter>Source Files\KFCBaseLibrary</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\kfc_fw\lib\KFCBaseLibrary\src\debug_helper.cpp">
-      <Filter>Source Files\KFCBaseLibrary</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\kfc_fw\lib\KFCBaseLibrary\src\DumpBinary.cpp">
-      <Filter>Source Files\KFCBaseLibrary</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\kfc_fw\lib\KFCBaseLibrary\src\dyn_bitset.cpp">
-      <Filter>Source Files\KFCBaseLibrary</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\kfc_fw\lib\KFCBaseLibrary\src\esp32_compat.cpp">
-      <Filter>Source Files\KFCBaseLibrary</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\kfc_fw\lib\KFCBaseLibrary\src\esp8266_compat.cpp">
-      <Filter>Source Files\KFCBaseLibrary</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\kfc_fw\lib\KFCBaseLibrary\src\MicrosTimer.cpp">
-      <Filter>Source Files\KFCBaseLibrary</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\kfc_fw\lib\KFCBaseLibrary\src\MillisTimer.cpp">
-      <Filter>Source Files\KFCBaseLibrary</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\kfc_fw\lib\KFCBaseLibrary\src\misc.cpp">
-      <Filter>Source Files\KFCBaseLibrary</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\kfc_fw\lib\KFCBaseLibrary\src\mock\Wire.cpp">
-      <Filter>Source Files\KFCBaseLibrary</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\kfc_fw\lib\KFCBaseLibrary\src\mock\Print.cpp">
-      <Filter>Source Files\KFCBaseLibrary</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

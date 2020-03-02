@@ -90,7 +90,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;_CRTDBG_MAP_ALLOC;_DEBUG=1;DEBUG=1;UNICODE;_UNICODE;ARDUINO=100</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>./LiquidCrystal_I2C;C:\Users\sascha\Documents\PlatformIO\Projects\kfc_fw\lib\KFCBaseLibrary\include\mock;C:\Users\sascha\Documents\PlatformIO\Projects\kfc_fw\lib\KFCBaseLibrary\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\lib\LiquidCrystal_I2C;.\lib\esp8266-kfc-fw\lib\KFCBaseLibrary\include\mock;.\lib\esp8266-kfc-fw\lib\KFCBaseLibrary\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -121,7 +121,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;_CRTDBG_MAP_ALLOC;_DEBUG=1;DEBUG=1;UNICODE;_UNICODE;ARDUINO=100</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>./LiquidCrystal_I2C;C:\Users\sascha\Documents\PlatformIO\Projects\kfc_fw\lib\KFCBaseLibrary\include\mock;C:\Users\sascha\Documents\PlatformIO\Projects\kfc_fw\lib\KFCBaseLibrary\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\lib\LiquidCrystal_I2C;.\lib\esp8266-kfc-fw\lib\KFCBaseLibrary\include\mock;.\lib\esp8266-kfc-fw\lib\KFCBaseLibrary\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -149,30 +149,32 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\..\kfc_fw\lib\KFCBaseLibrary\src\Arduino_compat.cpp" />
-    <ClCompile Include="..\..\..\..\kfc_fw\lib\KFCBaseLibrary\src\Buffer.cpp" />
-    <ClCompile Include="..\..\..\..\kfc_fw\lib\KFCBaseLibrary\src\BufferStream.cpp" />
-    <ClCompile Include="..\..\..\..\kfc_fw\lib\KFCBaseLibrary\src\crc16.cpp" />
-    <ClCompile Include="..\..\..\..\kfc_fw\lib\KFCBaseLibrary\src\debug_helper.cpp" />
-    <ClCompile Include="..\..\..\..\kfc_fw\lib\KFCBaseLibrary\src\DumpBinary.cpp" />
-    <ClCompile Include="..\..\..\..\kfc_fw\lib\KFCBaseLibrary\src\dyn_bitset.cpp" />
-    <ClCompile Include="..\..\..\..\kfc_fw\lib\KFCBaseLibrary\src\esp32_compat.cpp" />
-    <ClCompile Include="..\..\..\..\kfc_fw\lib\KFCBaseLibrary\src\esp8266_compat.cpp" />
-    <ClCompile Include="..\..\..\..\kfc_fw\lib\KFCBaseLibrary\src\MicrosTimer.cpp" />
-    <ClCompile Include="..\..\..\..\kfc_fw\lib\KFCBaseLibrary\src\MillisTimer.cpp" />
-    <ClCompile Include="..\..\..\..\kfc_fw\lib\KFCBaseLibrary\src\misc.cpp" />
-    <ClCompile Include="..\..\..\..\kfc_fw\lib\KFCBaseLibrary\src\mock\EEPROM.cpp" />
-    <ClCompile Include="..\..\..\..\kfc_fw\lib\KFCBaseLibrary\src\mock\FS.cpp" />
-    <ClCompile Include="..\..\..\..\kfc_fw\lib\KFCBaseLibrary\src\mock\Print.cpp" />
-    <ClCompile Include="..\..\..\..\kfc_fw\lib\KFCBaseLibrary\src\mock\Serial.cpp" />
-    <ClCompile Include="..\..\..\..\kfc_fw\lib\KFCBaseLibrary\src\mock\Stream.cpp" />
-    <ClCompile Include="..\..\..\..\kfc_fw\lib\KFCBaseLibrary\src\mock\StreamString.cpp" />
-    <ClCompile Include="..\..\..\..\kfc_fw\lib\KFCBaseLibrary\src\mock\WiFi.cpp" />
-    <ClCompile Include="..\..\..\..\kfc_fw\lib\KFCBaseLibrary\src\mock\WiFiUDP.cpp" />
-    <ClCompile Include="..\..\..\..\kfc_fw\lib\KFCBaseLibrary\src\mock\Wire.cpp" />
-    <ClCompile Include="..\..\..\..\kfc_fw\lib\KFCBaseLibrary\src\mock\WString.cpp" />
-    <ClCompile Include="..\..\..\..\kfc_fw\lib\KFCBaseLibrary\src\PrintString.cpp" />
-    <ClCompile Include="LiquidCrystal_I2C\LiquidCrystal_I2C.cpp" />
+    <ClCompile Include="lib\esp8266-kfc-fw\lib\KFCBaseLibrary\src\Arduino_compat.cpp" />
+    <ClCompile Include="lib\esp8266-kfc-fw\lib\KFCBaseLibrary\src\Buffer.cpp" />
+    <ClCompile Include="lib\esp8266-kfc-fw\lib\KFCBaseLibrary\src\BufferStream.cpp" />
+    <ClCompile Include="lib\esp8266-kfc-fw\lib\KFCBaseLibrary\src\crc16.cpp" />
+    <ClCompile Include="lib\esp8266-kfc-fw\lib\KFCBaseLibrary\src\debug_helper.cpp" />
+    <ClCompile Include="lib\esp8266-kfc-fw\lib\KFCBaseLibrary\src\DumpBinary.cpp" />
+    <ClCompile Include="lib\esp8266-kfc-fw\lib\KFCBaseLibrary\src\dyn_bitset.cpp" />
+    <ClCompile Include="lib\esp8266-kfc-fw\lib\KFCBaseLibrary\src\esp32_compat.cpp" />
+    <ClCompile Include="lib\esp8266-kfc-fw\lib\KFCBaseLibrary\src\esp8266_compat.cpp" />
+    <ClCompile Include="lib\esp8266-kfc-fw\lib\KFCBaseLibrary\src\MicrosTimer.cpp" />
+    <ClCompile Include="lib\esp8266-kfc-fw\lib\KFCBaseLibrary\src\MillisTimer.cpp" />
+    <ClCompile Include="lib\esp8266-kfc-fw\lib\KFCBaseLibrary\src\misc.cpp" />
+    <ClCompile Include="lib\esp8266-kfc-fw\lib\KFCBaseLibrary\src\mock\EEPROM.cpp" />
+    <ClCompile Include="lib\esp8266-kfc-fw\lib\KFCBaseLibrary\src\mock\ESP8266HttpClient.cpp" />
+    <ClCompile Include="lib\esp8266-kfc-fw\lib\KFCBaseLibrary\src\mock\FS.cpp" />
+    <ClCompile Include="lib\esp8266-kfc-fw\lib\KFCBaseLibrary\src\mock\Print.cpp" />
+    <ClCompile Include="lib\esp8266-kfc-fw\lib\KFCBaseLibrary\src\mock\Serial.cpp" />
+    <ClCompile Include="lib\esp8266-kfc-fw\lib\KFCBaseLibrary\src\mock\SPI.cpp" />
+    <ClCompile Include="lib\esp8266-kfc-fw\lib\KFCBaseLibrary\src\mock\Stream.cpp" />
+    <ClCompile Include="lib\esp8266-kfc-fw\lib\KFCBaseLibrary\src\mock\StreamString.cpp" />
+    <ClCompile Include="lib\esp8266-kfc-fw\lib\KFCBaseLibrary\src\mock\WiFi.cpp" />
+    <ClCompile Include="lib\esp8266-kfc-fw\lib\KFCBaseLibrary\src\mock\WiFiUDP.cpp" />
+    <ClCompile Include="lib\esp8266-kfc-fw\lib\KFCBaseLibrary\src\mock\Wire.cpp" />
+    <ClCompile Include="lib\esp8266-kfc-fw\lib\KFCBaseLibrary\src\mock\WString.cpp" />
+    <ClCompile Include="lib\esp8266-kfc-fw\lib\KFCBaseLibrary\src\PrintString.cpp" />
+    <ClCompile Include="lib\LiquidCrystal_I2C\LiquidCrystal_I2C.cpp" />
     <ClCompile Include="msvc_win32.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
