@@ -19,6 +19,12 @@
     <Filter Include="Source Files\KFCBaseLibrary">
       <UniqueIdentifier>{80f16a05-78a8-4d5c-b49d-7775b82a24e1}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\hd44780">
+      <UniqueIdentifier>{02e7c7e7-5128-45d4-9315-f106041c6fea}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Adafruit">
+      <UniqueIdentifier>{2e816359-29c3-47bf-89a4-37239308bdfa}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="msvc_win32.cpp">
@@ -99,8 +105,17 @@
     <ClCompile Include="lib\esp8266-kfc-fw\lib\KFCBaseLibrary\src\misc.cpp">
       <Filter>Source Files\KFCBaseLibrary</Filter>
     </ClCompile>
-    <ClCompile Include="lib\LiquidCrystal_I2C\LiquidCrystal_I2C.cpp">
-      <Filter>Source Files\LiquidCrystal_I2C</Filter>
+    <ClCompile Include="..\..\src\SerialTwoWire.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\hd44780\hd44780.cpp">
+      <Filter>Source Files\hd44780</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\Adafruit_SSD1306\Adafruit_SSD1306.cpp">
+      <Filter>Source Files\Adafruit</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\Adafruit-GFX-Library\Adafruit_GFX.cpp">
+      <Filter>Source Files\Adafruit</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

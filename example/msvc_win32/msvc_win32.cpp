@@ -4,13 +4,24 @@
 
 // TwoWire Mock class to communicate with I2C bus over USB and an Arduino
 
+// LiquidCrystal_I2C does not work yet, probably timing issues...
+
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 32
+#define OLED_RESET -1
+
+
 #include <Arduino_compat.h>
-#include "LiquidCrystal_I2C.h"
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+//#include "LiquidCrystal_I2C.h"
+//#include <hd44780.h>
+//#include <hd44780ioClass/hd44780_I2Cexp.h>
+
 
 int main()
 {
-    HANDLE hComm = get_com_handle();
-
     Serial.println(
         "---------------------------------------------------------------------------\n"
         " ping                           Send ping\n"
@@ -30,11 +41,12 @@ int main()
     SetConsoleMode(hStdin, fdwMode);
 
     Serial.println(F("Waiting for device to reboot..."));
-    EscapeCommFunction(hComm, SETDTR);
+    CommSerial.setDTR();
     delay(10);
-    EscapeCommFunction(hComm, CLRDTR);
+    CommSerial.clearDTR();
 
-    LiquidCrystal_I2C lcd(0x27, 16, 2);
+    //hd44780_I2Cexp lcd(0x27, I2Cexp_PCF8574, 0, 1, 2, 4, 5, 6, 7, 3, HIGH);
+    //LiquidCrystal_I2C lcd(0x27, 16, 2);
 
     String c_line;
     bool terminate = false;
@@ -63,14 +75,14 @@ int main()
                             cmd = c_line;
                         }
                         if (cmd == "scan") {
-                            serial_write(hComm, "+I2CS\n");
+                            CommSerial.println("+I2CS");
                         }
                         else if (cmd == "exit") {
                             terminate = true;
                             Serial.println("Exiting...");
                         }
                         else if (cmd == "ping") {
-                            serial_write(hComm, "+PING\n");
+                            CommSerial.println("+PING");
                         }
                         else if (cmd == "lm75") {
                             int address = (int)strtoul(c_line.c_str(), nullptr, 0);
@@ -87,17 +99,17 @@ int main()
                             }
                         }
                         else if (cmd == "setbl") {
-                            lcd.setBacklight(c_line.toInt());
+                            //lcd.setBacklight((uint8_t)c_line.toInt());
                         }
                         else if (cmd == "clear") {
-                            lcd.clear();
-                            lcd.home();
+                            //lcd.clear();
+                            //lcd.home();
                         }
                         else if (cmd == "println") {
-                            lcd.println(c_line);
+                            //lcd.print(c_line);
                         }
                         else {
-                            Serial.print("Unknown command");
+                            Serial.print("Unknown command: ");
                             Serial.println(cmd);
                         }
                         c_line = String();
@@ -121,23 +133,44 @@ int main()
             }
         }
 
-        auto tmp = serial_read_byte(hComm);
-        if (tmp == "+PING") {
-            Serial.println("LCD init @ 0x27");
-            lcd.init();
-            //lcd.backlight();
-            //lcd.clear();
-            Serial.println("Waiting for user command...");
-        }
-        else if (tmp.length()) {
-            Serial.println(tmp.c_str());
+        if (CommSerial.available()) {
+            auto tmp = CommSerial.readStringUntil('\n');
+            tmp.trim();
+            if (tmp == "+PING") {
+//                Serial.println("LCD init @ 0x27");
+                //lcd.init();
+                //lcd.backlight();
+                //lcd.clear();
+
+                Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+
+                if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { // Address 0x3C for 128x32
+                    Serial.println(F("SSD1306 allocation failed"));
+                }
+                display.display();
+                
+                delay(3000);
+
+                //auto status = lcd.begin(16, 2);
+                //if (status)
+                //{
+                //    status = -status;
+                //    __debugbreak_and_panic_printf_P(PSTR("fatal error %d\n"), status);
+                //}
+                //lcd.print("Hello, World!");
+
+                Serial.println("Waiting for user command...");
+            }
+            else if (tmp.length()) {
+                Serial.println(tmp.c_str());
+            }
         }
 
         delay(10);
     }
     while (!terminate);
 
-    CloseHandle(hComm);
+    
 
     return 0;
 }

@@ -22,7 +22,7 @@ It supports master-slave and master-master communication.
         uint16_t word;
         if (Wire.requestFrom(0x17, 2) == 2) {   // Sends "+I2CR=1702\n"
             // The response is "+I2CT=173412\n"
-            Wire.readBytes(reinterpret_cast<const uint8_t *>(&word), sizeof(word)); // word=0x123
+            Wire.readBytes(reinterpret_cast<const uint8_t *>(&word), sizeof(word)); // word=0x1234
         }
     }
 

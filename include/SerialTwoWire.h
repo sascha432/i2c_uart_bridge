@@ -23,16 +23,16 @@ class Serial;
 
 class SerialTwoWire : public Stream {
 public:
-    typedef void (* onReceiveCallback)(int);
-    typedef void (* onRequestCallback)();
-    typedef void (* onReadSerialCallback)();
+    typedef std::function<void(int)> onReceiveCallback;
+    typedef std::function<void()> onRequestCallback;
+    typedef std::function<void()> onReadSerialCallback;
 
     typedef enum {
+        STOP_LINE = -1,
         NONE = 0,
         TRANSMIT,
         REQUEST,
         SCAN,
-        STOP_LINE,
     } CommandEnum_t;
 
     SerialTwoWire();
@@ -114,7 +114,7 @@ private:
     uint8_t _waitForResponse();
     void _addBuffer();
     void _processData();
-    void _printHex(uint8_t data, Stream &stream);
+    void _printHex(uint8_t data);
 
     uint8_t _address;
     uint8_t _recvAddress;

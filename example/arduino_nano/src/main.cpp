@@ -46,11 +46,13 @@ void loop()
             } else if (strncasecmp_P(line.c_str(), PSTR("+I2CR="), 6) == 0) {   /// request from Wire and transmit to Serial
                 auto data = parse_data(line.c_str() + 6, line.length() - 6, length);
                 if (data && length >= 2) {
+                    char buf[4];
                     uint8_t request_length = *(data + 1);
                     Serial.print(F("+I2CT="));
+                    snprintf_P(buf, sizeof(buf) - 1, PSTR("%02x"), *data);
+                    Serial.print(buf);
                     if (Wire.requestFrom(*data, request_length) == request_length) {
                         while(Wire.available()) {
-                            char buf[4];
                             snprintf_P(buf, sizeof(buf) - 1, PSTR("%02x"), Wire.read());
                             Serial.print(buf);
                         }

@@ -88,9 +88,9 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;_CRTDBG_MAP_ALLOC;_DEBUG=1;DEBUG=1;UNICODE;_UNICODE;ARDUINO=100</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;_CRTDBG_MAP_ALLOC;_DEBUG=1;DEBUG=1;UNICODE;_UNICODE;ARDUINO=101;SERIALTWOWIRE_NO_GLOBALS;SERIALTWOWIRE_USE_BUFFERSTREAM</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>.\lib\LiquidCrystal_I2C;.\lib\esp8266-kfc-fw\lib\KFCBaseLibrary\include\mock;.\lib\esp8266-kfc-fw\lib\KFCBaseLibrary\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\lib\Adafruit-GFX-Library;.\lib\Adafruit_SSD1306;.\lib\esp8266-kfc-fw\lib\KFCBaseLibrary\include\mock;.\lib\esp8266-kfc-fw\lib\KFCBaseLibrary\include;..\..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -119,9 +119,9 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;_CRTDBG_MAP_ALLOC;_DEBUG=1;DEBUG=1;UNICODE;_UNICODE;ARDUINO=100</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;_CRTDBG_MAP_ALLOC;_DEBUG=1;DEBUG=1;UNICODE;_UNICODE;ARDUINO=101;SERIALTWOWIRE_NO_GLOBALS;SERIALTWOWIRE_USE_BUFFERSTREAM</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>.\lib\LiquidCrystal_I2C;.\lib\esp8266-kfc-fw\lib\KFCBaseLibrary\include\mock;.\lib\esp8266-kfc-fw\lib\KFCBaseLibrary\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\lib\Adafruit-GFX-Library;.\lib\Adafruit_SSD1306;.\lib\esp8266-kfc-fw\lib\KFCBaseLibrary\include\mock;.\lib\esp8266-kfc-fw\lib\KFCBaseLibrary\include;..\..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -149,6 +149,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\src\SerialTwoWire.cpp" />
+    <ClCompile Include="lib\Adafruit-GFX-Library\Adafruit_GFX.cpp" />
+    <ClCompile Include="lib\Adafruit_SSD1306\Adafruit_SSD1306.cpp" />
     <ClCompile Include="lib\esp8266-kfc-fw\lib\KFCBaseLibrary\src\Arduino_compat.cpp" />
     <ClCompile Include="lib\esp8266-kfc-fw\lib\KFCBaseLibrary\src\Buffer.cpp" />
     <ClCompile Include="lib\esp8266-kfc-fw\lib\KFCBaseLibrary\src\BufferStream.cpp" />
@@ -174,7 +177,7 @@
     <ClCompile Include="lib\esp8266-kfc-fw\lib\KFCBaseLibrary\src\mock\Wire.cpp" />
     <ClCompile Include="lib\esp8266-kfc-fw\lib\KFCBaseLibrary\src\mock\WString.cpp" />
     <ClCompile Include="lib\esp8266-kfc-fw\lib\KFCBaseLibrary\src\PrintString.cpp" />
-    <ClCompile Include="lib\LiquidCrystal_I2C\LiquidCrystal_I2C.cpp" />
+    <ClCompile Include="lib\hd44780\hd44780.cpp" />
     <ClCompile Include="msvc_win32.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
