@@ -37,9 +37,7 @@ public:
 
     SerialTwoWire();
     SerialTwoWire(Stream &serial);
-    virtual ~SerialTwoWire() {
-        end();
-    }
+
     void setSerial(Stream &serial);
 
     void begin(uint8_t address) {

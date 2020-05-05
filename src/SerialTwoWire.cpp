@@ -26,7 +26,7 @@ void serialEvent() {
 static const char _i2c_transmit_cmd[] PROGMEM = { I2C_OVER_UART_PREFIX_TRANSMIT };
 static const char _i2c_request_cmd[] PROGMEM = { I2C_OVER_UART_PREFIX_REQUEST };
 
-SerialTwoWire::SerialTwoWire() : SerialTwoWire(Serial) 
+SerialTwoWire::SerialTwoWire() : SerialTwoWire(Serial)
 {
 }
 
@@ -42,13 +42,13 @@ void SerialTwoWire::setSerial(Stream &serial)
     _serial = serial;
 }
 
-void SerialTwoWire::beginTransmission(uint8_t address) 
+void SerialTwoWire::beginTransmission(uint8_t address)
 {
     _out.clear();
     _out.write(address);
 }
 
-uint8_t SerialTwoWire::endTransmission(uint8_t stop) 
+uint8_t SerialTwoWire::endTransmission(uint8_t stop)
 {
     _serial.print(reinterpret_cast<const __FlashStringHelper *>(_i2c_transmit_cmd));
     while (_out.available()) {
@@ -59,7 +59,7 @@ uint8_t SerialTwoWire::endTransmission(uint8_t stop)
     return 0;
 }
 
-uint8_t SerialTwoWire::requestFrom(uint8_t address, uint8_t count, uint8_t stop) 
+uint8_t SerialTwoWire::requestFrom(uint8_t address, uint8_t count, uint8_t stop)
 {
     _recvAddress = address;
     _serial.print(reinterpret_cast<const __FlashStringHelper *>(_i2c_request_cmd));
@@ -69,7 +69,7 @@ uint8_t SerialTwoWire::requestFrom(uint8_t address, uint8_t count, uint8_t stop)
     return _waitForResponse();
 }
 
-uint8_t SerialTwoWire::_waitForResponse() 
+uint8_t SerialTwoWire::_waitForResponse()
 {
     if (_onReadSerial) {
         unsigned long timeout = millis() + _timeout;
@@ -87,12 +87,12 @@ uint8_t SerialTwoWire::_waitForResponse()
     return 0;
 }
 
-size_t SerialTwoWire::write(uint8_t data) 
+size_t SerialTwoWire::write(uint8_t data)
 {
     return _out.write(data);
 }
 
-size_t SerialTwoWire::write(const uint8_t *data, size_t length) 
+size_t SerialTwoWire::write(const uint8_t *data, size_t length)
 {
     size_t count = length;
     while (count--) {
@@ -101,23 +101,23 @@ size_t SerialTwoWire::write(const uint8_t *data, size_t length)
     return length;
 }
 
-int SerialTwoWire::available(void) 
+int SerialTwoWire::available(void)
 {
     // return length after the entire line has been processed
     return _command == NONE && _in.available();
 }
 
-int SerialTwoWire::read(void) 
+int SerialTwoWire::read(void)
 {
     return _in.read();
 }
 
-int SerialTwoWire::peek(void) 
+int SerialTwoWire::peek(void)
 {
     return _in.peek();
 }
 
-void SerialTwoWire::newLine() 
+void SerialTwoWire::newLine()
 {
     if (_command > NONE) {
         _addBuffer();
@@ -128,7 +128,7 @@ void SerialTwoWire::newLine()
 }
 
 
-void SerialTwoWire::feed(uint8_t data) 
+void SerialTwoWire::feed(uint8_t data)
 {
     if (data == '\r') {
     }
@@ -142,7 +142,7 @@ void SerialTwoWire::feed(uint8_t data)
     else if (_command != NONE) {
         // #2 add data to command buffer
         if (data != ',') {
-            _buffer += data;
+            _buffer += (char)data;
             if (_buffer.length() == 2) {
                 _addBuffer();
             }
@@ -150,7 +150,7 @@ void SerialTwoWire::feed(uint8_t data)
     }
     else if ((_buffer.length() > 0 || !isspace(data)) && _buffer.length() < 16) {
         // #1 trim leading spaces and determine command
-        _buffer += data;
+        _buffer += (char)data;
         if (strcasecmp_P(_buffer.c_str(), _i2c_transmit_cmd) == 0) {
             _in.clear();
             _command = TRANSMIT;
@@ -164,27 +164,27 @@ void SerialTwoWire::feed(uint8_t data)
     }
 }
 
-void SerialTwoWire::stopLine() 
+void SerialTwoWire::stopLine()
 {
     _command = STOP_LINE;
 }
 
-void SerialTwoWire::onReceive(onReceiveCallback callback) 
+void SerialTwoWire::onReceive(onReceiveCallback callback)
 {
     _onReceive = callback;
 }
 
-void SerialTwoWire::onRequest(onRequestCallback callback) 
+void SerialTwoWire::onRequest(onRequestCallback callback)
 {
     _onRequest = callback;
 }
 
-void SerialTwoWire::onReadSerial(onReadSerialCallback callback) 
+void SerialTwoWire::onReadSerial(onReadSerialCallback callback)
 {
     _onReadSerial = callback;
 }
 
-void SerialTwoWire::_addBuffer() 
+void SerialTwoWire::_addBuffer()
 {
     if (_buffer.length() == 2) {
         auto data = strtoul(_buffer.c_str(), 0, 16);
@@ -198,7 +198,7 @@ void SerialTwoWire::_addBuffer()
     }
 }
 
-void SerialTwoWire::_processData() 
+void SerialTwoWire::_processData()
 {
     if (_in.length() > 1) {
         if (_command == TRANSMIT) {
