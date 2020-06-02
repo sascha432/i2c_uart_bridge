@@ -9,12 +9,13 @@
     },
     "repository": {
         "type": "git",
-        "url": "https://github.com/sascha432/i2c_uart_bridge"
+        "url": "https://github.com/sascha432/i2c_uart_bridge.git"
     },
     "dependencies": [
         {
             "name": "atmelavrStreamString",
-            "version": "https://github.com/sascha432/atmelavrStreamString"
+            "version": "https://github.com/sascha432/atmelavrStreamString.git",
+            "platforms": [ "atmelavr" ]
         }
     ],
     "version": "0.0.1",
