@@ -23,9 +23,15 @@ class Serial;
 
 class SerialTwoWire : public Stream {
 public:
+#if __AVR__
+    typedef void (*onReceiveCallback)(int length);
+    typedef void (*onRequestCallback)();
+    typedef void (*onReadSerialCallback)();
+#else
     typedef std::function<void(int)> onReceiveCallback;
     typedef std::function<void()> onRequestCallback;
     typedef std::function<void()> onReadSerialCallback;
+#endif
 
     typedef enum {
         STOP_LINE = -1,
