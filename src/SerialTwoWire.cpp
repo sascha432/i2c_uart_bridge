@@ -123,6 +123,12 @@ void SerialTwoWire::newLine()
         _addBuffer();
         _processData();
     }
+#if SERIALTWOWIRE_DEBUG
+    else {
+        Serial.print(F("newLine=cmd=NONE,"));
+        Serial.println(_buffer);
+    }
+#endif
     _command = NONE;
     _buffer = String();
 }
@@ -162,6 +168,12 @@ void SerialTwoWire::feed(uint8_t data)
             _buffer = String();
         }
     }
+#if SERIALTWOWIRE_DEBUG
+    else {
+        Serial.print(F("header mismatch="));
+        Serial.println(_buffer);
+    }
+#endif
 }
 
 void SerialTwoWire::stopLine()
@@ -189,32 +201,98 @@ void SerialTwoWire::_addBuffer()
     if (_buffer.length() == 2) {
         auto data = strtoul(_buffer.c_str(), 0, 16);
         if (_in.length() == 0 && data != _address && data != _recvAddress) { // stop processing if the address does not match and the data isn't a response to the last requestFrom() call
+#if SERIALTWOWIRE_DEBUG
+            Serial.print(F("stopLine=addr="));
+            _printHex(_address);
+            Serial.print(F("recvAddr="));
+            _printHex(_recvAddress);
+            Serial.print(F("inAddr="));
+            _printHex(data);
+            Serial.println();
+#endif
             stopLine();
         }
         else {
-            _in.write((uint8_t)data);
-            _buffer = String();
+#if SERIALTWOWIRE_MAX_INPUT_LENGTH
+            if (_in.length() >= SERIALTWOWIRE_MAX_INPUT_LENGTH) {
+#if SERIALTWOWIRE_DEBUG
+                Serial.print(F("stopLine=max_len="));
+                Serial.println(SERIALTWOWIRE_MAX_INPUT_LENGTH);
+#endif
+                stopLine();
+            }
+            else
+#endif
+            {
+                _in.write((uint8_t)data);
+                _buffer = String();
+            }
         }
+    }
+}
+
+const __FlashStringHelper *SerialTwoWire::_getCommandStr(CommandEnum_t command) const
+{
+    switch(command) {
+        case STOP_LINE:
+            return F("STOP_LINE");
+        case TRANSMIT:
+            return F("TRANSMIT");
+        case REQUEST:
+            return F("REQUEST");
+        case SCAN:
+            return F("SCAN");
+        case NONE:
+        default:
+            return F("NONE");
     }
 }
 
 void SerialTwoWire::_processData()
 {
+#if SERIALTWOWIRE_DEBUG
+    Serial.print(F("process=addr="));
+    _printHex(_address);
+    Serial.print(',');
+    Serial.print(_getCommandStr(_command));
+    if (_in.length()) {
+        Serial.print(',');
+        _printHex(_in);
+        Serial.println();
+    }
+    else {
+        Serial.println(F("no data"));
+    }
+#endif
     if (_in.length() > 1) {
         if (_command == TRANSMIT) {
             if (_in.read() == _address) {
+#if SERIALTWOWIRE_DEBUG
+                Serial.print(F("_onReceive="));
+                Serial.println(_in.length());
+#endif
+
                 // address matches slave address, invoke onReceive callback
                 _onReceive(_in.length());
             }
             else {
                 // the data will be processed by after requestFrom()
                 _recvAddress = 0;
+#if SERIALTWOWIRE_DEBUG
+                Serial.println(F("address mismatch"));
+#endif
             }
         }
         else if (_command == REQUEST) {
             // create requestFrom and send to serial
             uint8_t len = _in.charAt(1);
             beginTransmission(_address);
+#if SERIALTWOWIRE_DEBUG
+                Serial.print(F("_onRequest="));
+                Serial.print(_out.length());
+                Serial.println(',');
+                Serial.println(len);
+#endif
             _onRequest();
             while (_out.length() <= len) {
                 _out.write(0xff);
@@ -228,6 +306,13 @@ void SerialTwoWire::_printHex(uint8_t data)
 {
     _serial.print(data >> 4, HEX);
     _serial.print(data & 0xf, HEX);
+}
+
+void SerialTwoWire::_printHex(const SerialTwoWireStream &stream)
+{
+    for(size_t i = 0; i < stream.length(); i++) {
+        _printHex((uint8_t)stream.charAt(i));
+    }
 }
 
 void SerialTwoWire::_serialEvent()

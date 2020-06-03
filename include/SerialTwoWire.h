@@ -19,6 +19,15 @@ using SerialTwoWireStream = StreamString;
 #define HAVE_I2C_SCANNER                0
 #endif
 
+#ifndef SERIALTWOWIRE_DEBUG
+#define SERIALTWOWIRE_DEBUG             0
+#endif
+
+// maximum binary input length, 0 to disable
+#ifndef SERIALTWOWIRE_MAX_INPUT_LENGTH
+#define SERIALTWOWIRE_MAX_INPUT_LENGTH  512
+#endif
+
 class Serial;
 
 class SerialTwoWire : public Stream {
@@ -122,6 +131,8 @@ private:
     void _addBuffer();
     void _processData();
     void _printHex(uint8_t data);
+    void _printHex(const SerialTwoWireStream &stream);
+    const __FlashStringHelper *_getCommandStr(CommandEnum_t command) const;
 
     uint8_t _address;
     uint8_t _recvAddress;
