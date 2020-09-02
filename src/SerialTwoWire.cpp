@@ -67,9 +67,9 @@ void SerialTwoWire::end()
     _address = 0;
     _length = 0;
     _command = NONE;
-    _in.clear();
-    _request.clear();
-    _out.clear();
+    _in.release();
+    _request.release();
+    _out.release();
     _read = &_request;
 }
 
@@ -100,7 +100,7 @@ uint8_t SerialTwoWire::requestFrom(uint8_t address, uint8_t count, uint8_t stop)
     }
 
     // discard any data from previous requests
-    _request.removeAndShrink(0);
+    _request.clear();
     _request.write(address);
 
     // send request
@@ -141,29 +141,29 @@ size_t SerialTwoWire::write(uint8_t data)
 
 size_t SerialTwoWire::write(const uint8_t *data, size_t length)
 {
-    size_t count = length;
-    while (count--) {
-        _out.write(*data++);
-    }
-    return length;
+    return _write(data, length);
 }
 
-int SerialTwoWire::available(void)
+size_t SerialTwoWire::write(const char *data, size_t length)
+{
+    return _write(reinterpret_cast<const uint8_t *>(data), length);
+}
+
+int SerialTwoWire::available()
 {
     return _read->available();
 }
 
-int SerialTwoWire::read(void)
+int SerialTwoWire::read()
 {
     auto data = _read->read();
-    if (_read->length() == _read->position() && _read->length()) {
-        // free memory when reaching end of stream
+    if (available() == 0) {
         _read->clear();
     }
     return data;
 }
 
-int SerialTwoWire::peek(void)
+int SerialTwoWire::peek()
 {
     return _read->peek();
 }

@@ -7,20 +7,14 @@
 #pragma once
 
 #include <Arduino.h>
-#if SERIALTWOWIRE_USE_BUFFERSTREAM
-#include <BufferStream.h>
-using SerialTwoWireStream = BufferStream;
-#else
-#include <StreamString.h>
-using SerialTwoWireStream = StreamString;
-#endif
+#include "SerialTwoWireStream.h"
 
 #ifndef HAVE_I2C_SCANNER
 #define HAVE_I2C_SCANNER                        0
 #endif
 
 #ifndef DEBUG_SERIALTWOWIRE
-#define DEBUG_SERIALTWOWIRE                     1
+#define DEBUG_SERIALTWOWIRE                     0
 #endif
 
 #ifndef I2C_OVER_UART_PREFIX_TRANSMIT
@@ -33,8 +27,10 @@ using SerialTwoWireStream = StreamString;
 
 // maximum binary input length, 0 to disable
 #ifndef SERIALTWOWIRE_MAX_INPUT_LENGTH
-#define SERIALTWOWIRE_MAX_INPUT_LENGTH  512
+#define SERIALTWOWIRE_MAX_INPUT_LENGTH          254
 #endif
+
+static_assert(SERIALTWOWIRE_MAX_INPUT_LENGTH < 255, "maximum excceeded");
 
 class Serial;
 
@@ -47,6 +43,10 @@ class Serial;
 class SerialTwoWire : public Stream {
 public:
     static constexpr size_t kMaxBufferSize = ___max_str_len(I2C_OVER_UART_PREFIX_TRANSMIT, I2C_OVER_UART_PREFIX_REQUEST) + 1;
+    static constexpr uint8_t kFillingRequest = 0xff;
+    static constexpr uint8_t kFinishedRequest = 0x00;
+    static constexpr uint8_t kReadValueOutOfRange = 0xff;
+    static constexpr uint8_t kRequestCommandMaxLength = 2;
 
 public:
 #if __AVR__
@@ -103,6 +103,8 @@ public:
 
     virtual size_t write(uint8_t data);
     virtual size_t write(const uint8_t *data, size_t length);
+    virtual size_t write(const char *data, size_t length);
+
     virtual int available(void);
     virtual int read(void);
     virtual int peek(void);
@@ -140,18 +142,11 @@ public:
     void _serialEvent();
 
 private:
+    size_t _write(const uint8_t *data, size_t length);
     uint8_t _waitForResponse(uint8_t address, uint8_t count);
     void _addBuffer();
     void _processData();
     void _printHex(uint8_t data);
-
-private:
-    static constexpr uint8_t kFillingRequest = 0xff;
-    static constexpr uint8_t kFinishedRequest = 0x00;
-
-    static constexpr uint8_t kReadValueOutOfRange = 0xff;
-
-    static constexpr uint8_t kRequestCommandMaxLength = 2;
 
 private:
     uint8_t _address;                   // own address
@@ -162,7 +157,7 @@ private:
     SerialTwoWireStream _in;            // incoming messages
     SerialTwoWireStream _request;       // incoming message for requestFrom
     SerialTwoWireStream _out;           // output buffer for write
-    SerialTwoWireStream *_read;
+    SerialTwoWireStream *_read;         // points to the message buffer either master or slave
     Stream &_serial;
 
     onReceiveCallback _onReceive;
@@ -178,7 +173,6 @@ inline void SerialTwoWire::setSerial(Stream &serial)
 inline void SerialTwoWire::stopLine()
 {
     _command = STOP_LINE;
-    //_removeReading();
 }
 
 inline void SerialTwoWire::onReceive(onReceiveCallback callback)
@@ -194,6 +188,11 @@ inline void SerialTwoWire::onRequest(onRequestCallback callback)
 inline void SerialTwoWire::onReadSerial(onReadSerialCallback callback)
 {
     _onReadSerial = callback;
+}
+
+inline size_t SerialTwoWire::_write(const uint8_t *data, size_t length)
+{
+    return _out.write(data, length);
 }
 
 inline void SerialTwoWire::_printHex(uint8_t data)

@@ -6,7 +6,7 @@
 // Flash on an Arduino Nano, add a 16x2 LCD to the I2C bus (or any other device) and run the windows app
 
 #include <Arduino.h>
-#include <Wire.h>
+#include <SerialTwoWire.h>
 
 void scan_i2c_bus();
 uint8_t *parse_data(const char *data, size_t hex_length, size_t &length);
