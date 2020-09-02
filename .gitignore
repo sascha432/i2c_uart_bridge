@@ -8,3 +8,4 @@ example/msvc_win32/Debug
 example/msvc_win32/Release
 example/msvc_win32/.vs
 example/msvc_win32/lib/
+.vscode
