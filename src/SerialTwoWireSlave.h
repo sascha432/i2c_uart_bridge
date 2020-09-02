@@ -2,8 +2,6 @@
  * Author: sascha_lammers@gmx.de
  */
 
-// I2C over UART emulation
-
 #pragma once
 
 #include <Arduino.h>

@@ -27,7 +27,7 @@ public:
 
     inline void removeAndShrink() {
         // remove data that has been read and shrink to fit, leaving current size + 16 byte allocated to reduce memory ops
-        BufferStream::removeAndShrink(_position, ~0, 16);
+        BufferStream::removeAndShrink(position(), ~0, 16);
     }
 };
 

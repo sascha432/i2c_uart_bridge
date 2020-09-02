@@ -3,6 +3,7 @@
  */
 
 #include "SerialTwoWireMaster.h"
+#include "SerialTwoWireDebug.h"
 
 SerialTwoWireMaster::SerialTwoWireMaster() :
     _read(&_request)
