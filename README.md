@@ -4,6 +4,10 @@ This class can be used as drop in replacement for the TwoWire class, using the I
 
 It supports master-slave and master-master communication.
 
+## Platforms
+
+Supported platforms are atmelavr, espressif8266 and espressif32. Visual Studio 2019 can be used to compile native Win32 applications. This requires an Arduino library that compiles for this target.
+
 ## Example of serial communication
 
     SoftwareSerial SoftSerial(8, 9);
