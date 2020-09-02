@@ -24,7 +24,7 @@
 
 SerialTwoWire Wire;
 
-void serialEvent() 
+void serialEvent()
 {
     Wire._serialEvent();
 }
@@ -196,6 +196,12 @@ void SerialTwoWire::newLine()
         }
         _processData();
     }
+#if SERIALTWOWIRE_DEBUG
+    else {
+        Serial.print(F("newLine=cmd=NONE,"));
+        Serial.println(_buffer);
+    }
+#endif
     _command = NONE;
     _length = 0;
 }
@@ -270,7 +276,7 @@ void SerialTwoWire::_addBuffer()
         __LDBG_assert(_in.length() == 0);
         if (data == _address) {
             // add address to buffer to indicate its use
-            _in.write(data);    
+            _in.write(data);
         }
         else if (_request.length() && _request.charAt(0) == data) {
             // mark as being processed
@@ -282,7 +288,6 @@ void SerialTwoWire::_addBuffer()
             stopLine();
         }
     }
-    _length = 0;
 }
 
 void SerialTwoWire::_processData()
@@ -305,7 +310,10 @@ void SerialTwoWire::_processData()
     }
     else if (_command == TRANSMIT) {
         if (_in.length()) {
-            auto address = _in.read();
+#if SERIALTWOWIRE_DEBUG
+            auto address =
+#endif
+            _in.read();
             __LDBG_printf("available=%u addr=0x%02x _addr=0x%02x", _in.available(), address, _address);
             // address was already checked
             _read = &_in;
@@ -315,7 +323,7 @@ void SerialTwoWire::_processData()
         }
         else if (_request.charAt(0) == kFillingRequest) {
             // mark as finished
-            _request[0] = kFinishedRequest; 
+            _request[0] = kFinishedRequest;
         }
     }
 }

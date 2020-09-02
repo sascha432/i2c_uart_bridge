@@ -31,6 +31,15 @@ using SerialTwoWireStream = StreamString;
 #define I2C_OVER_UART_PREFIX_REQUEST            "+I2CR="
 #endif
 
+#ifndef SERIALTWOWIRE_DEBUG
+#define SERIALTWOWIRE_DEBUG             0
+#endif
+
+// maximum binary input length, 0 to disable
+#ifndef SERIALTWOWIRE_MAX_INPUT_LENGTH
+#define SERIALTWOWIRE_MAX_INPUT_LENGTH  512
+#endif
+
 class Serial;
 
 #if _MSC_VER
@@ -44,9 +53,15 @@ public:
     static constexpr size_t kMaxBufferSize = ___max_str_len(I2C_OVER_UART_PREFIX_TRANSMIT, I2C_OVER_UART_PREFIX_REQUEST) + 1;
 
 public:
+#if __AVR__
+    typedef void (*onReceiveCallback)(int length);
+    typedef void (*onRequestCallback)();
+    typedef void (*onReadSerialCallback)();
+#else
     typedef std::function<void(int)> onReceiveCallback;
     typedef std::function<void()> onRequestCallback;
     typedef std::function<void()> onReadSerialCallback;
+#endif
 
     typedef enum : int8_t {
         NONE,
@@ -58,6 +73,7 @@ public:
     SerialTwoWire();
     SerialTwoWire(Stream &serial);
     SerialTwoWire(Stream &serial, onReadSerialCallback callback);
+
     void setSerial(Stream &serial);
 
     inline void begin(uint8_t address) {
@@ -189,12 +205,6 @@ inline void SerialTwoWire::_printHex(uint8_t data)
     _serial.print(data >> 4, HEX);
     _serial.print(data & 0xf, HEX);
 }
-
-//inline void SerialTwoWire::_inClear() {
-//    _available = 0;
-//    _reading = 0;
-//    _in.clear();
-//}
 
 #ifndef SERIALTWOWIRE_NO_GLOBALS
 extern SerialTwoWire Wire;
