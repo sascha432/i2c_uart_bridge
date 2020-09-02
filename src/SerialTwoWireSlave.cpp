@@ -78,7 +78,7 @@ int SerialTwoWireSlave::available()
 int SerialTwoWireSlave::read()
 {
     auto data = _in.read();
-    if (available() == 0) {
+    if (_in.available() == 0) { // resize when empty
         _in.clear();
     }
     return data;
@@ -101,17 +101,14 @@ size_t SerialTwoWireSlave::readBytes(char *buffer, size_t length)
 
 void SerialTwoWireSlave::_newLine()
 {
-    __LDBG_printf("cmd=%u length=%u _in=%u", _command, _length, _in.length());
-    if (_length == 1 || _command <= STOP_LINE) {
-        // invalid data, discard
-        if (_in.length()) {
-            _in.clear();
-        }
+    // add any data left in the buffer
+    _addBuffer(_parseData(true));
+
+    __LDBG_printf("cmd=%u length=%u _in=%u discard=%u", _command, _length, _in.length(), (_command <= DISCARD || _in.length() == 0));
+    if (_command <= DISCARD || _in.length() == 0) {
+        _in.clear();
     }
-    else if (_in.length()) {
-        if (_length) { // 2 byte left
-            _addBuffer(_parseData());
-        }
+    else {
         _processData();
     }
     _command = NONE;
@@ -123,7 +120,7 @@ void SerialTwoWireSlave::feed(uint8_t data)
     if (data == '\n') { // check first
         _newLine();
     }
-    else if (_command == STOP_LINE || data == '\r') {
+    else if (_command == DISCARD || data == '\r') {
         // skip rest of the line cause of invalid data
     }
     else if (_command == NONE) {
@@ -133,7 +130,7 @@ void SerialTwoWireSlave::feed(uint8_t data)
             _discard();
         }
         else {
-            __LDBG_assert(_length < sizeof(_buffer) - 1);
+            __LDBG_assert(_length < sizeof(_buffer) - 1, "buf=%-*.*s", (sizeof(_buffer) - 1), (sizeof(_buffer) - 1), _buffer);
             // append
             _buffer[_length++] = data;
             _buffer[_length] = 0;
@@ -148,13 +145,11 @@ void SerialTwoWireSlave::feed(uint8_t data)
         }
     }
     else if (isxdigit(data)) {
-        __LDBG_assert(_length < sizeof(_buffer) - 1);
-        __LDBG_assert(_length < 2);
+        __LDBG_assert(_length < sizeof(_buffer) - 1, "buf=%-*.*s", (sizeof(_buffer) - 1), (sizeof(_buffer) - 1), _buffer);
+        __LDBG_assert(_length < 2, "length=%u", _length);
         // add data to command buffer
         _buffer[_length++] = data;
-        if (_length == 2) {
-            _addBuffer(_parseData());
-        }
+        _addBuffer(_parseData());
     }
     else if (data != ',' && !isspace(data)) {
         // invalid data, discard
@@ -163,21 +158,36 @@ void SerialTwoWireSlave::feed(uint8_t data)
     }
 }
 
-uint8_t SerialTwoWireSlave::_parseData()
+int SerialTwoWireSlave::_parseData(bool lastByte)
 {
-    __LDBG_assert(_length == 2);
-    _buffer[_length] = 0;
+    __LDBG_assert(_length <= 2, "length=%u last_byte=%u buf=%-*.*s", _length, lastByte, (sizeof(_buffer) - 1), (sizeof(_buffer) - 1), _buffer);
+    if (lastByte) {
+        if (_length == 1) {
+            _discard();
+            return -1;
+        }
+        else if (_length == 0) {
+            return -1;
+        }
+    }
+    else if (_length < 2) {
+        return -1;
+    }
+    _buffer[2] = 0;
     return (uint8_t)strtoul(reinterpret_cast<const char *>(_buffer), nullptr, 16);
 }
 
-void SerialTwoWireSlave::_addBuffer(uint8_t data)
+void SerialTwoWireSlave::_addBuffer(int data)
 {
+    if (data == kNoDataAvailable) {
+        return;
+    }
     if (_in.length()) {
         // write to _in
         _in.write(data);
     }
     else {
-        __LDBG_assert(_in.length() == 0);
+        __LDBG_assert(_in.length() == 0, "length=%u data=%d", _length, data);
         if (data == _address) {
             // add address to buffer to indicate its use
             _in.write(data);

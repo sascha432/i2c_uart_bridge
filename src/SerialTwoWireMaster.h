@@ -34,7 +34,7 @@ public:
 
 protected:
     void _newLine();
-    void _addBuffer(uint8_t data);
+    void _addBuffer(int data);
     void _processData();
     uint8_t _waitForResponse(uint8_t address, uint8_t count);
 

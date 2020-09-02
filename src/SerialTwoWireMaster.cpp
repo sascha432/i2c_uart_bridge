@@ -80,7 +80,7 @@ int SerialTwoWireMaster::available()
 int SerialTwoWireMaster::read()
 {
     auto data = _read->read();
-    if (available() == 0) {
+    if (_read->available() == 0) { // resize when empty
         _read->clear();
     }
     return data;
@@ -103,9 +103,16 @@ size_t SerialTwoWireMaster::readBytes(char *buffer, size_t length)
 
 void SerialTwoWireMaster::_newLine()
 {
-    __LDBG_printf("cmd=%u length=%u _in=%u _request=%u", _command, _length, _in.length(), _request.charAt(0) == kFillingRequest ? _request.length() : 0);
-    if (_length == 1 || _command <= STOP_LINE) {
-        // invalid data, discard
+    // add any data that's left in the buffer
+    _addBuffer(_parseData(true));
+
+    __LDBG_printf("cmd=%u length=%u _in=%u _request=%u discard=%u",
+        _command, _length, _in.length(),
+        (_request.charAt(0) == kFillingRequest ? _request.length() : 0),
+        (_command <= DISCARD || (_in.length() == 0 && _request.charAt(0) != kFillingRequest))
+    );
+
+    if (_command <= DISCARD || (_in.length() == 0 && _request.charAt(0) != kFillingRequest)) {
         if (_in.length()) {
             _in.clear();
         }
@@ -113,18 +120,18 @@ void SerialTwoWireMaster::_newLine()
             _request.clear();
         }
     }
-    else if (_in.length() || _request.charAt(0) == kFillingRequest) {
-        if (_length) { // 2 byte left
-            _addBuffer(_parseData());
-        }
+    else {
         _processData();
     }
     _command = NONE;
     _length = 0;
 }
 
-void SerialTwoWireMaster::_addBuffer(uint8_t data)
+void SerialTwoWireMaster::_addBuffer(int data)
 {
+    if (data == kNoDataAvailable) {
+        return;
+    }
     if (_request.charAt(0) == kFillingRequest) {
         _request.write(data);
     }
@@ -136,7 +143,7 @@ void SerialTwoWireMaster::_addBuffer(uint8_t data)
         _in.write(data);
     }
     else {
-        __LDBG_assert(_in.length() == 0);
+        __LDBG_assert(_in.length() == 0, "length=%u data=%d", _length, data);
         if (data == _address) {
             // add address to buffer to indicate its use
             _in.write(data);
@@ -198,7 +205,7 @@ void SerialTwoWireMaster::feed(uint8_t data)
     if (data == '\n') { // check first
         _newLine();
     }
-    else if (_command == STOP_LINE || data == '\r') {
+    else if (_command == DISCARD || data == '\r') {
         // skip rest of the line cause of invalid data
     }
     else if (_command == NONE) {
@@ -208,7 +215,7 @@ void SerialTwoWireMaster::feed(uint8_t data)
             _discard();
         }
         else {
-            __LDBG_assert(_length < sizeof(_buffer) - 1);
+            __LDBG_assert(_length < sizeof(_buffer) - 1, "buf=%-*.*s", (sizeof(_buffer) - 1), (sizeof(_buffer) - 1), _buffer);
             // append
             _buffer[_length++] = data;
             _buffer[_length] = 0;
@@ -227,13 +234,11 @@ void SerialTwoWireMaster::feed(uint8_t data)
         }
     }
     else if (isxdigit(data)) {
-        __LDBG_assert(_length < sizeof(_buffer) - 1);
-        __LDBG_assert(_length < 2);
+        __LDBG_assert(_length < sizeof(_buffer) - 1, "buf=%-*.*s", (sizeof(_buffer) - 1), (sizeof(_buffer) - 1), _buffer);
+        __LDBG_assert(_length < 2, "length=%u", _length);
         // add data to command buffer
         _buffer[_length++] = data;
-        if (_length == 2) {
-            _addBuffer(_parseData());
-        }
+        _addBuffer(_parseData());
     }
     else if (data != ',' && !isspace(data)) {
         // invalid data, discard

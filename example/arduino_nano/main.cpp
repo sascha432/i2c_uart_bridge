@@ -16,7 +16,7 @@ void setup()
     Serial.begin(115200);
 #if I2C_OVER_UART_ENABLE_MASTER
     Wire.begin();
-else
+#else
     Wire.begin(0x01);
 #endif
     Serial.println(F("+PING"));

@@ -15,6 +15,7 @@ public:
     static constexpr uint8_t kFinishedRequest = 0x00;
     static constexpr uint8_t kReadValueOutOfRange = 0xff;
     static constexpr uint8_t kRequestCommandMaxLength = 2;
+    static constexpr int kNoDataAvailable = -1;
 
 public:
 #if __AVR__
@@ -29,7 +30,7 @@ public:
 
     typedef enum : int8_t {
         NONE,
-        STOP_LINE,
+        DISCARD,
         TRANSMIT,
         REQUEST,
     } CommandEnum_t;
@@ -99,8 +100,8 @@ public:
 protected:
     size_t _write(const uint8_t *data, size_t length);
     void _newLine();
-    void _addBuffer(uint8_t data);
-    uint8_t _parseData();
+    void _addBuffer(int data);
+    int _parseData(bool lastByte = false);
     void _processData();
     void _printHex(uint8_t data);
     void _discard();
@@ -127,7 +128,7 @@ inline void SerialTwoWireSlave::setSerial(Stream &serial)
 
 inline void SerialTwoWireSlave::_discard()
 {
-    _command = STOP_LINE;
+    _command = DISCARD;
 }
 
 inline void SerialTwoWireSlave::onReceive(onReceiveCallback callback)
