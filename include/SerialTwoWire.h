@@ -20,7 +20,7 @@ using SerialTwoWireStream = StreamString;
 #endif
 
 #ifndef DEBUG_SERIALTWOWIRE
-#define DEBUG_SERIALTWOWIRE                     0
+#define DEBUG_SERIALTWOWIRE                     1
 #endif
 
 #ifndef I2C_OVER_UART_PREFIX_TRANSMIT
@@ -29,10 +29,6 @@ using SerialTwoWireStream = StreamString;
 
 #ifndef I2C_OVER_UART_PREFIX_REQUEST
 #define I2C_OVER_UART_PREFIX_REQUEST            "+I2CR="
-#endif
-
-#ifndef SERIALTWOWIRE_DEBUG
-#define SERIALTWOWIRE_DEBUG             0
 #endif
 
 // maximum binary input length, 0 to disable

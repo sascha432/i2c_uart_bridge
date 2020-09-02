@@ -196,12 +196,6 @@ void SerialTwoWire::newLine()
         }
         _processData();
     }
-#if SERIALTWOWIRE_DEBUG
-    else {
-        Serial.print(F("newLine=cmd=NONE,"));
-        Serial.println(_buffer);
-    }
-#endif
     _command = NONE;
     _length = 0;
 }
@@ -288,6 +282,7 @@ void SerialTwoWire::_addBuffer()
             stopLine();
         }
     }
+    _length = 0;
 }
 
 void SerialTwoWire::_processData()
@@ -310,7 +305,7 @@ void SerialTwoWire::_processData()
     }
     else if (_command == TRANSMIT) {
         if (_in.length()) {
-#if SERIALTWOWIRE_DEBUG
+#if DEBUG_SERIALTWOWIRE
             auto address =
 #endif
             _in.read();
