@@ -22,6 +22,8 @@
 
 int main()
 {
+
+
     Serial.println(
         "---------------------------------------------------------------------------\n"
         " ping                           Send ping\n"
@@ -34,6 +36,22 @@ int main()
         " exit                           End program\n"
         "---------------------------------------------------------------------------\n"
     );
+
+    SerialTwoWire wire;
+    wire.begin(0x18);
+    wire.onReceive([](int value) {
+        int k = value;
+    });
+
+    const char *tmp = "+I2CT=18F02AFA0CDD727142587E2342E77D2A42\n";
+    const char *p = tmp;
+    while (*p) {
+        wire.feed(*p);
+        p++;
+    }
+    return 0;
+
+    
 
 
     HANDLE hStdin = GetStdHandle(STD_INPUT_HANDLE);

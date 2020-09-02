@@ -44,28 +44,41 @@ esp-link is a transparent bridge between Wifi and serial.
 
 ## Protocol
 
-### Master
-
 The master can send data to slaves and request data from slaves by writing to the serial port.
 
-#### Sending data
+## Transmissions and data encoding
 
-+I2CT=\<address\>,\<data\>[,\<data\>[,...]]
+Data is sent as 2 digit hex value. Whitespace is allowed to separate bytes.
+Allowed charaters are 0-9, a-f, A-F, comma, tab and space.
+The end of a transmission is makred by a line feed. carriage return is optional.
+The maximum transmission length is 254 byte, including the I2C address.
 
-Address and data are in 2 digit hex format. The comma is for readablity and optional.
+### Sending data
+
++I2CT=\<address\>,\<data\>[,\<data\>[,...]]\<LF\>
+
+Master and slave are transmitting data to the serial port.
 
 #### Requesting data
 
-+I2CR=\<address\>,\<length\>
++I2CR=\<address\>,\<length\>\<LF\>
 
-Address and length are in 2 digit hex format.
+The master sends requests to the serial port.
 
 #### Receiving from slaves
 
-Data from slaves is read from the serial port.
++I2CT=\<address\>\<data\>[\<data\>[...]]\<LF\>
 
-+I2CT=\<address\>\<data\>[\<data\>[...]]
+Master and slave are reading transmissions from the serial port.
 
-### Scanning the I2C bus
+## Concurrency and collisions
 
-+I2CS
+### Locking and acknowledgement
+
+Locking and acknowledgement is currently not implemented. The serial communication is based in 2 wires, without any other signal like DTS, RTS etc... which would required additonal serial communication and cause a lot overhead and delays. This might lead to collisions in master/master mode if both masters are sending data at the same time. The data becomes invalid and both transmissions are discarded.
+
+### Collisions
+
+A master can request data and receive transmissions at the same time without collissions. If a slave responds after the master aborted the request cause of a timeout and requesting data from another slave, this might lead to a collison and both transmissions would be discarded. These problems only occur with low serial bandwith and high concurrency.
+
+I suggest to implement random timeouts, delays and retries on the master side, which should sufficiently mitigate the issue.
