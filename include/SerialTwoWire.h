@@ -31,15 +31,17 @@ using SerialTwoWireStream = StreamString;
 #define I2C_OVER_UART_PREFIX_REQUEST            "+I2CR="
 #endif
 
-#ifndef I2C_OVER_UART_PREFIX_MAX_LEN
-#define I2C_OVER_UART_PREFIX_MAX_LEN            7       // max. strlen() + 1 of I2C_OVER_UART_PREFIX_TRANSMIT and I2C_OVER_UART_PREFIX_REQUEST
-#endif
-
 class Serial;
+
+#if _MSC_VER
+#define ___max_str_len(a, b) (constexpr_strlen(a) > constexpr_strlen(b) ? constexpr_strlen(a) : constexpr_strlen(b))
+#else
+#define ___max_str_len(a, b) (__builtin_strlen(a) > __builtin_strlen(b) ? __builtin_strlen(a) : __builtin_strlen(b))
+#endif
 
 class SerialTwoWire : public Stream {
 public:
-    static constexpr size_t kMaxBufferSize = (I2C_OVER_UART_PREFIX_MAX_LEN + 1) & ~1;
+    static constexpr size_t kMaxBufferSize = ___max_str_len(I2C_OVER_UART_PREFIX_TRANSMIT, I2C_OVER_UART_PREFIX_REQUEST) + 1;
 
 public:
     typedef std::function<void(int)> onReceiveCallback;
@@ -55,6 +57,7 @@ public:
 
     SerialTwoWire();
     SerialTwoWire(Stream &serial);
+    SerialTwoWire(Stream &serial, onReadSerialCallback callback);
     void setSerial(Stream &serial);
 
     inline void begin(uint8_t address) {
@@ -92,6 +95,8 @@ public:
     virtual int read(void);
     virtual int peek(void);
     virtual void flush(void) {}
+    virtual size_t readBytes(uint8_t *buffer, size_t length);
+    virtual size_t readBytes(char *buffer, size_t length);
 
     void onReceive(onReceiveCallback callback);
     void onRequest(onRequestCallback callback);
@@ -123,18 +128,29 @@ public:
     void _serialEvent();
 
 private:
-    uint8_t _waitForResponse();
+    uint8_t _waitForResponse(uint8_t address, uint8_t count);
     void _addBuffer();
     void _processData();
     void _printHex(uint8_t data);
 
-    uint32_t _address: 8;
-    uint32_t _recvAddress: 8;
-    uint32_t _length: 14;
-    uint32_t _command: 2;
+private:
+    static constexpr uint8_t kFillingRequest = 0xff;
+    static constexpr uint8_t kFinishedRequest = 0x00;
+
+    static constexpr uint8_t kReadValueOutOfRange = 0xff;
+
+    static constexpr uint8_t kRequestCommandMaxLength = 2;
+
+private:
+    uint8_t _address;                   // own address
+    uint8_t _length;                    // _buffer.length
+    CommandEnum_t _command;
     uint8_t _buffer[kMaxBufferSize];
-    SerialTwoWireStream _in;
-    SerialTwoWireStream _out;
+
+    SerialTwoWireStream _in;            // incoming messages
+    SerialTwoWireStream _request;       // incoming message for requestFrom
+    SerialTwoWireStream _out;           // output buffer for write
+    SerialTwoWireStream *_read;
     Stream &_serial;
 
     onReceiveCallback _onReceive;
@@ -150,6 +166,7 @@ inline void SerialTwoWire::setSerial(Stream &serial)
 inline void SerialTwoWire::stopLine()
 {
     _command = STOP_LINE;
+    //_removeReading();
 }
 
 inline void SerialTwoWire::onReceive(onReceiveCallback callback)
@@ -172,6 +189,12 @@ inline void SerialTwoWire::_printHex(uint8_t data)
     _serial.print(data >> 4, HEX);
     _serial.print(data & 0xf, HEX);
 }
+
+//inline void SerialTwoWire::_inClear() {
+//    _available = 0;
+//    _reading = 0;
+//    _in.clear();
+//}
 
 #ifndef SERIALTWOWIRE_NO_GLOBALS
 extern SerialTwoWire Wire;

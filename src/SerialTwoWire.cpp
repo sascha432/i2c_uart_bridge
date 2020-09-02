@@ -5,20 +5,27 @@
 #include "SerialTwoWire.h"
 
 #if DEBUG_SERIALTWOWIRE
-#include <PrintString.h>
 #include <debug_helper.h>
 #include <debug_helper_enable.h>
+#undef __LDBG_assert
+#define __LDBG_assert(...) assert(__VA_ARGS__)
 #else
+#undef __LDBG_printf
+#undef __LDBG_print
+#undef __LDBG_println
+#undef __LDBG_assert
 #define __LDBG_printf(...)
 #define __LDBG_print(...)
 #define __LDBG_println(...)
+#define __LDBG_assert(...)
 #endif
 
 #ifndef SERIALTWOWIRE_NO_GLOBALS
 
 SerialTwoWire Wire;
 
-void serialEvent() {
+void serialEvent() 
+{
     Wire._serialEvent();
 }
 
@@ -31,7 +38,24 @@ SerialTwoWire::SerialTwoWire() : SerialTwoWire(Serial)
 {
 }
 
-SerialTwoWire::SerialTwoWire(Stream &serial) : _address(0), _recvAddress(0), _length(0), _command(NONE), _buffer{}, _serial(serial)
+SerialTwoWire::SerialTwoWire(Stream &serial, onReadSerialCallback callback) :
+    _address(0),
+    _length(0),
+    _command(NONE),
+    _buffer{},
+    _read(&_request),
+    _serial(serial),
+    _onReadSerial(callback)
+{
+}
+
+SerialTwoWire::SerialTwoWire(Stream &serial) :
+    _address(0),
+    _length(0),
+    _command(NONE),
+    _buffer{},
+    _read(&_request),
+    _serial(serial)
 #ifndef SERIALTWOWIRE_NO_GLOBALS
     , _onReadSerial(serialEvent)
 #endif
@@ -40,11 +64,13 @@ SerialTwoWire::SerialTwoWire(Stream &serial) : _address(0), _recvAddress(0), _le
 
 void SerialTwoWire::end()
 {
+    _address = 0;
     _length = 0;
     _command = NONE;
-    _address = 0;
     _in.clear();
+    _request.clear();
     _out.clear();
+    _read = &_request;
 }
 
 void SerialTwoWire::beginTransmission(uint8_t address)
@@ -56,53 +82,55 @@ void SerialTwoWire::beginTransmission(uint8_t address)
 
 uint8_t SerialTwoWire::endTransmission(uint8_t stop)
 {
-#if DEBUG_SERIALTWOWIRE
-    PrintString str;
-    str.print(reinterpret_cast<const __FlashStringHelper *>(_i2c_transmit_cmd));
-    while (_out.available()) {
-        str.printf_P(PSTR("%02x"), _out.read());
-    }
-    _out.clear();
-    _serial.println(str);
-    __DBG_printf("stop=%u out=%s", stop, __S(str));
-#else
     _serial.print(reinterpret_cast<const __FlashStringHelper *>(_i2c_transmit_cmd));
     while (_out.available()) {
         _printHex(_out.read());
     }
     _out.clear();
     _serial.println();
-#endif
     return 0;
 }
 
 uint8_t SerialTwoWire::requestFrom(uint8_t address, uint8_t count, uint8_t stop)
 {
-    __LDBG_printf("addr=0x%02x count=%u stop=%u", address, count, stop);
-    _recvAddress = address;
+    __LDBG_printf("addr=0x%02x count=%u stop=%u len=%u", address, count, stop, _request.length());
+
+    if (count == 0 || address == 0) {
+        return 0;
+    }
+
+    // discard any data from previous requests
+    _request.removeAndShrink(0);
+    _request.write(address);
+
+    // send request
     _serial.print(reinterpret_cast<const __FlashStringHelper *>(_i2c_request_cmd));
     _printHex(address);
     _printHex(count);
     _serial.println();
-    return _waitForResponse();
+
+    // wait response
+    return _waitForResponse(address, count);
 }
 
-uint8_t SerialTwoWire::_waitForResponse()
+uint8_t SerialTwoWire::_waitForResponse(uint8_t address, uint8_t count)
 {
-    if (_onReadSerial) {
-        unsigned long timeout = millis() + _timeout;
-        do {
+    unsigned long timeout = millis() + _timeout;
+    while(_request[0] != kFinishedRequest && millis() <= timeout) {
 #if defined(ESP8266) || defined(ESP32)
-            delay(1);
+            optimistic_yield(1000);
 #endif
+        if (_onReadSerial) {
             _onReadSerial();
-        } while (millis() < timeout && !available());
-
-        if (available()) {
-            return _in.available();
         }
     }
-    __LDBG_printf("timeout=%d can_yield=%u", (int)_timeout, can_yield());
+    __LDBG_printf("peek=0x%02x count=%u available=%u", _request.peek(), count, _request.available());
+    if (_request.read() == kFinishedRequest && _request.available() == count) {
+        // address was removed = done
+        return count;
+     }
+     // timeout, wrong address, wrong size...
+     _request.clear();
     return 0;
 }
 
@@ -122,31 +150,55 @@ size_t SerialTwoWire::write(const uint8_t *data, size_t length)
 
 int SerialTwoWire::available(void)
 {
-    // return length after the entire line has been processed
-    return _command == NONE && _in.available();
+    return _read->available();
 }
 
 int SerialTwoWire::read(void)
 {
-    return _in.read();
+    auto data = _read->read();
+    if (_read->length() == _read->position() && _read->length()) {
+        // free memory when reaching end of stream
+        _read->clear();
+    }
+    return data;
 }
 
 int SerialTwoWire::peek(void)
 {
-    return _in.peek();
+    return _read->peek();
+}
+
+size_t SerialTwoWire::readBytes(uint8_t *buffer, size_t length)
+{
+    return _read->readBytes(buffer, length);
+}
+
+size_t SerialTwoWire::readBytes(char *buffer, size_t length)
+{
+    return _read->readBytes(reinterpret_cast<uint8_t *>(buffer), length);
 }
 
 void SerialTwoWire::newLine()
 {
-    __LDBG_printf("cmd=%u buf=%s", _command, __S(printable_string(_buffer, _length)));
-    if (_command > STOP_LINE) {
-        _addBuffer();
+    __LDBG_printf("cmd=%u length=%u _in=%u _request=%u", _command, _length, _in.length(), _request.charAt(0) == kFillingRequest ? _request.length() : 0);
+    if (_length == 1 || _command <= STOP_LINE) {
+        // invalid data, discard
+        if (_in.length()) {
+            _in.clear();
+        }
+        else if (_request.charAt(0) == kFillingRequest) {
+            _request.clear();
+        }
+    }
+    else if (_in.length() || _request.charAt(0) == kFillingRequest) {
+        if (_length) { // 2 byte left
+            _addBuffer();
+        }
         _processData();
     }
     _command = NONE;
     _length = 0;
 }
-
 
 void SerialTwoWire::feed(uint8_t data)
 {
@@ -156,75 +208,114 @@ void SerialTwoWire::feed(uint8_t data)
     else if (_command == STOP_LINE || data == '\r') {
         // skip rest of the line cause of invalid data
     }
-    else if (_length >= sizeof(_buffer) - 1) { // buffer full
-        stopLine();
-    }
     else if (_command == NONE) {
-        if (_length || !isspace(data)) { // ignore leading spaces
+        if (_length == 0 && data != '+') {
+            // must start with +
+            __LDBG_printf("discard data=%u", data);
+            stopLine();
+        }
+        else {
+            __LDBG_assert(_length < sizeof(_buffer) - 1);
+            // append
             _buffer[_length++] = data;
             _buffer[_length] = 0;
             if (strcasecmp_P(reinterpret_cast<const char *>(_buffer), _i2c_transmit_cmd) == 0) {
                 _command = TRANSMIT;
                 _length = 0;
-                _in.clear();
             }
             else if (strcasecmp_P(reinterpret_cast<const char *>(_buffer), _i2c_request_cmd) == 0) {
                 _command = REQUEST;
                 _length = 0;
-                _in.clear();
             }
-            __LDBG_printf("cmd=%u buf=%s len=%u", _command, _buffer, _length);
+            else if (_length >= sizeof(_buffer) - 1) { // buffer full
+                __LDBG_printf("discard length=%u", _length);
+                stopLine();
+            }
         }
     }
     else if (isxdigit(data)) {
+        __LDBG_assert(_length < sizeof(_buffer) - 1);
+        __LDBG_assert(_length < 2);
         // add data to command buffer
         _buffer[_length++] = data;
-        if (_length >= 2) {
+        if (_length == 2) {
             _addBuffer();
         }
     }
+    else if (data != ',' && !isspace(data)) {
+        // invalid data, discard
+        __LDBG_printf("discard data=%u", data);
+        stopLine();
+    }
 }
-
 
 void SerialTwoWire::_addBuffer()
 {
-    if (_length >= 2) {
-        _buffer[_length] = 0;
-        auto data = strtoul(reinterpret_cast<const char *>(_buffer), nullptr, 16);
-        if (_in.length() == 0 && data != _address && data != _recvAddress) { // stop processing if the address does not match and the data isn't a response to the last requestFrom() call
-            __LDBG_printf("len=%u data=0x%02x address=0x%02x recv_addr=0x%02x", _in.length(), data, _address, _recvAddress);
-            stopLine();
+    __LDBG_assert(_length == 2);
+
+    _buffer[_length] = 0;
+    auto data = (uint8_t)strtoul(reinterpret_cast<const char *>(_buffer), nullptr, 16);
+
+    if (_request.charAt(0) == kFillingRequest) {
+        _request.write(data);
+    }
+    else if (_in.length()) {
+        // write to _in
+        if (_command == REQUEST && _in.length() >= kRequestCommandMaxLength) {
+            return; // we only need 2 bytes for a request
+        }
+        _in.write(data);
+    }
+    else {
+        __LDBG_assert(_in.length() == 0);
+        if (data == _address) {
+            // add address to buffer to indicate its use
+            _in.write(data);    
+        }
+        else if (_request.length() && _request.charAt(0) == data) {
+            // mark as being processed
+            _request[0] = kFillingRequest;
         }
         else {
-            _in.write((uint8_t)data);
-            _length = 0;
+            // invalid address, discard
+            __LDBG_printf("address=0x%02x _address=0x%02x _request=0x%02x", data, _address, _request.charAt(0) & 0xffff);
+            stopLine();
         }
     }
+    _length = 0;
 }
 
 void SerialTwoWire::_processData()
 {
-    __LDBG_printf("len=%u addr=0x%02x _addr=0x%02x data=%s", _in.length(), _in.peek(), _address, __S(printable_string(_in.begin(), _in.length())));
-    if (_in.length() > 1) {
-        if (_command == TRANSMIT) {
-            if (_in.read() == _address) {
-                // address matches slave address, invoke onReceive callback
-                _onReceive(_in.length());
-            }
-            else {
-                // the data will be processed by after requestFrom()
-                _recvAddress = 0;
-            }
+    if (_in.length() == 1) {
+        // no data, discard
+        _in.clear();
+    }
+    else if (_command == REQUEST) {
+        // request has address and length only
+        uint8_t len = _in.charAt(1);
+        __LDBG_printf("requestFrom slave=0x%02x len=%u", _in.charAt(0), len);
+        beginTransmission((uint8_t)_address);
+        _onRequest();
+        while (_out.length() <= len) {
+            _out.write(kReadValueOutOfRange);
         }
-        else if (_command == REQUEST) {
-            // create requestFrom and send to serial
-            uint8_t len = _in.charAt(1);
-            beginTransmission((uint8_t)_address);
-            _onRequest();
-            while (_out.length() <= len) {
-                _out.write(0xff);
-            }
-            endTransmission();
+        endTransmission();
+        _in.clear();
+    }
+    else if (_command == TRANSMIT) {
+        if (_in.length()) {
+            auto address = _in.read();
+            __LDBG_printf("available=%u addr=0x%02x _addr=0x%02x", _in.available(), address, _address);
+            // address was already checked
+            _read = &_in;
+            _onReceive(_in.available());
+            _read = &_request;
+            _in.clear();
+        }
+        else if (_request.charAt(0) == kFillingRequest) {
+            // mark as finished
+            _request[0] = kFinishedRequest; 
         }
     }
 }
