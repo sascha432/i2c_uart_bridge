@@ -17,6 +17,33 @@ using SerialTwoWire = SerialTwoWireMaster;
 using SerialTwoWire = SerialTwoWireSlave;
 #endif
 
+#if defined(ESP8266) || defined(ESP32)
+
+#elif __AVR__
+
+static inline bool can_yield() {
+    return true;
+}
+
+static inline void optimistic_yield(uint32_t) {
+    yield();
+}
+
+#elif _MSC_VER
+
+
+#include <thread>
+
+static inline bool can_yield() {
+    return true;
+}
+
+static inline void optimistic_yield(uint32_t) {
+    std::this_thread::yield();
+}
+
+#endif
+
 #ifndef SERIALTWOWIRE_NO_GLOBALS
 
 void serialEvent();

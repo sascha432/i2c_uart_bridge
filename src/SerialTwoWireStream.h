@@ -6,6 +6,12 @@
 // Extension to match functionality and method names
 //
 
+#include "SerialTwoWireDef.h"
+
+#if I2C_OVER_UART_ADD_CRC16
+#include <crc16.h>
+#endif
+
 #if SERIALTWOWIRE_USE_BUFFERSTREAM
 
 #include <BufferStream.h>
@@ -15,15 +21,14 @@ class SerialTwoWireStream : public BufferStream
 public:
     using BufferStream::BufferStream;
 
-    // keep the buffer size above 15 byte to reduce realloc calls
-    // Buffer uses a 8 byte block size, having recalloc only called to change to 16, 24, 32, ... bytes
-    static constexpr size_t kAllocMinSize = 15;
+    // Buffer uses an alloc block size of 8
+    static constexpr size_t kAllocMinSize = I2C_OVER_UART_ALLOC_MIN_SIZE;
 
     // remove contents and resize buffer to minimum
     inline void clear() {
         // remove all data
         BufferStream::reset();
-        Buffer::shrink(15);
+        Buffer::shrink(kAllocMinSize);
     }
 
     // release all memory
@@ -33,7 +38,7 @@ public:
 
     inline void shrink_to_fit() {
         // remove data that has been read and resize buffer to max. length + 15
-        BufferStream::removeAndShrink(0, position(), 15);
+        BufferStream::removeAndShrink(0, position(), kAllocMinSize);
     }
 };
 
@@ -46,20 +51,10 @@ class SerialTwoWireStream : public StreamString
 public:
     using StreamString::StreamString;
 
-#if __AVR__
-    // keep buffer > 8 bytes to reduce alloc calls
-    // the block size is 4, realloc will be called for 8, 12, 16, ... bytes
-    static constexpr size_t kAllocMinSize = 7;
-    static constexpr size_t kAllocBlockSize = 4;
-#elif defined(ESP8266) || defined(ESP32)
-    // keep the buffer size above 15 byte to reduce realloc calls
-    // String for ESP8266 uses a 16 byte block size having realloc called for 16, 32, 48, .. bytes
-    static constexpr size_t kAllocMinSize = 15;
-    static constexpr size_t kAllocBlockSize = 0;
-#else
-    static constexpr size_t kAllocMinSize = 15;
-    static constexpr size_t kAllocBlockSize = 8;
-#endif
+    // some String implementations might free if kAllocMinSize is below a certain value
+    // the allocation block size depends on the implementation as well
+    // ESP8266 < 11 = free dynamic memory, alloc block size 16
+    static constexpr size_t kAllocMinSize = I2C_OVER_UART_ALLOC_MIN_SIZE;
 
     // remove contents and resize buffer to minimum
     inline void clear() {
@@ -74,14 +69,65 @@ public:
 
     inline void shrink_to_fit() {
         if (capacity > String::length() + kAllocMinSize) {
-            size_t size = (String::length() < kAllocMinSize) ? kAllocMinSize : String::length();
-            if (kAllocBlockSize) {
-                size = (size + (kAllocBlockSize - 1)) & ~(kAllocBlockSize - 1);
-            }
             // keep buffer above minimum otherwise the String might free the memory
+            size_t size = (String::length() < kAllocMinSize) ? kAllocMinSize : String::length();
             String::changeBuffer(size);
         }
     }
 };
 
 #endif
+
+// #if I2C_OVER_UART_ADD_CRC16
+
+// class SerialTwoWireCrcStream : public SerialTwoWireStream {
+// public:
+//     inline void clear() {
+//         _crc = ~0;
+//         SerialTwoWireStream::clear();
+//     }
+
+//     inline void writeAddress(uint8_t address) {
+//         _crc = ~0;
+//         writeData(address);
+//     }
+
+//     inline void writeData(uint8_t data) {
+//         _crc = _crc16_update(_crc, data);
+//         write(data);
+//     }
+
+//     // inline void finalize() {
+//     //     write((uint8_t)_crc);
+//     //     write(_crc >> 8);
+//     // }
+
+
+
+// // private:
+// //     inline void _writeNibble(uint8_t nibble) {
+// //         write(nibble < 0xa ? nibble : nibble + ('a' - 0xa))
+// //     }
+
+// protected:
+//     uint16_t _crc;
+// };
+
+// #else
+
+// class SerialTwoWireCrcStream : public SerialTwoWireStream {
+// public:
+//     inline void writeAddress(uint8_t address) {
+//         write(address);
+//     }
+
+//     inline void writeData(uint8_t data) {
+//         write(data);
+//     }
+
+//     constexpr bool isValid() {
+//         return true;
+//     }
+// };
+
+// #endif

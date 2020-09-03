@@ -7,8 +7,8 @@
 #if DEBUG_SERIALTWOWIRE
 #include <debug_helper.h>
 #include <debug_helper_enable.h>
-#undef __LDBG_assert
-#define __LDBG_assert(condition, fmt, ...) if (!(condition)) { __DBG_printf(fmt, ##__VA_ARGS__); assert(condition); }
+#undef __LDBG_assert_printf
+#define __LDBG_assert_printf(cond, fmt, ...) if (!(cond)) { __DBG_printf(fmt, __VA_ARGS__); assert(cond); }
 #else
 #undef __LDBG_printf
 #undef __LDBG_print
@@ -17,5 +17,5 @@
 #define __LDBG_printf(...)
 #define __LDBG_print(...)
 #define __LDBG_println(...)
-#define __LDBG_assert(...)
+#define __LDBG_assert_printf(...)
 #endif

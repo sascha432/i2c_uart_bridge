@@ -2,6 +2,7 @@
  * Author: sascha_lammers@gmx.de
  */
 
+#include "SerialTwoWire.h"
 #include "SerialTwoWireMaster.h"
 #include "SerialTwoWireDebug.h"
 
@@ -31,7 +32,7 @@ void SerialTwoWireMaster::end()
 
 uint8_t SerialTwoWireMaster::requestFrom(uint8_t address, uint8_t count, uint8_t stop)
 {
-    __LDBG_printf("addr=0x%02x count=%u stop=%u len=%u", address, count, stop, _request.length());
+    __LDBG_printf("addr=%02x count=%u stop=%u len=%u", address, count, stop, _request.length());
 
     if (count == 0 || address == 0) {
         return 0;
@@ -45,24 +46,36 @@ uint8_t SerialTwoWireMaster::requestFrom(uint8_t address, uint8_t count, uint8_t
     _serial.print(reinterpret_cast<const __FlashStringHelper *>(_i2c_request_cmd));
     _printHex(address);
     _printHex(count);
+#if I2C_OVER_UART_ADD_CRC16
+    _serial.print(I2C_OVER_UART_CRC_START);
+    auto crc = _crc16_update(_crc16_update(~0, address), count);
+    _printHex((uint8_t)crc);
+    _printHex(crc >> 8);
+#endif
     _serial.println();
 
-    // wait response
+    // wait for response
+#if DEBUG_SERIALTWOWIRE
+    auto start = micros();
+    auto result = _waitForResponse(address, count);
+    auto dur = micros() - start;
+    __DBG_printf("response=%d time=%uus can_yield=%u", result, dur, can_yield());
+    return result;
+#else
     return _waitForResponse(address, count);
+#endif
 }
 
 uint8_t SerialTwoWireMaster::_waitForResponse(uint8_t address, uint8_t count)
 {
     unsigned long timeout = millis() + _timeout;
     while(_request[0] != kFinishedRequest && millis() <= timeout) {
-#if defined(ESP8266) || defined(ESP32)
-            optimistic_yield(1000);
-#endif
+        optimistic_yield(1000);
         if (_onReadSerial) {
             _onReadSerial();
         }
     }
-    __LDBG_printf("peek=0x%02x count=%u available=%u", _request.peek(), count, _request.available());
+    __LDBG_printf("peek=%02x count=%u available=%u", _request.peek(), count, _request.available());
     if (_request.read() == kFinishedRequest && _request.available() == count) {
         // address was removed = done
         return count;
@@ -106,6 +119,11 @@ void SerialTwoWireMaster::_newLine()
     // add any data that's left in the buffer
     _addBuffer(_parseData(true));
 
+#if DEBUG_BUFFER_ALLOC && DEBUG_SERIALTWOWIRE
+    size_t _inLen = _in.length();
+    size_t _requestLen = _request.length();
+#endif
+
     __LDBG_printf("cmd=%u length=%u _in=%u _request=%u discard=%u",
         _command, _length, _in.length(),
         (_request.charAt(0) == kFillingRequest ? _request.length() : 0),
@@ -125,6 +143,20 @@ void SerialTwoWireMaster::_newLine()
     }
     _command = NONE;
     _length = 0;
+#if I2C_OVER_UART_ADD_CRC16
+    _crcMarker = false;
+    _crc = ~0;
+#endif
+
+#if DEBUG_BUFFER_ALLOC && DEBUG_SERIALTWOWIRE
+    _inLen = std::max(_in.length(), _inLen);
+    _requestLen = std::max(_request.length(), _requestLen);
+    Serial.printf_P(PSTR("SerialTwoWire %lu: transmissions=%u _in=%u "), (unsigned long)millis(), _transmissions, _inLen);
+    _in.dumpAlloc(Serial);
+    Serial.printf_P(PSTR(" _request=%u "), _requestLen);
+    _request.dumpAlloc(Serial);
+    Serial.println();
+#endif
 }
 
 void SerialTwoWireMaster::_addBuffer(int data)
@@ -133,17 +165,27 @@ void SerialTwoWireMaster::_addBuffer(int data)
         return;
     }
     if (_request.charAt(0) == kFillingRequest) {
-        _request.write(data);
+        if (_request.length() >= kTransmissionMaxLength) {
+            _discard();
+        }
+        else {
+            _request.write(data);
+        }
     }
     else if (_in.length()) {
         // write to _in
         if (_command == REQUEST && _in.length() >= kRequestCommandMaxLength) {
-            return; // we only need 2 bytes for a request
+            // we only need 2 bytes for a request
         }
-        _in.write(data);
+        else if (_in.length() >= kTransmissionMaxLength) {
+            _discard();
+        }
+        else {
+            _in.write(data);
+        }
     }
     else {
-        __LDBG_assert(_in.length() == 0, "length=%u data=%d", _length, data);
+        __LDBG_assert_printf(_in.length() == 0, "length=%u data=%d", _length, data);
         if (data == _address) {
             // add address to buffer to indicate its use
             _in.write(data);
@@ -154,7 +196,7 @@ void SerialTwoWireMaster::_addBuffer(int data)
         }
         else {
             // invalid address, discard
-            __LDBG_printf("address=0x%02x _address=0x%02x _request=0x%02x", data, _address, _request.charAt(0) & 0xffff);
+            __LDBG_printf("address=%02x _address=%02x _request=%02x", data, _address, _request.charAt(0) & 0xffff);
             _discard();
         }
     }
@@ -170,7 +212,7 @@ void SerialTwoWireMaster::_processData()
     else if (_command == REQUEST) {
         // request has address and length only
         uint8_t len = _in.charAt(1);
-        __LDBG_printf("requestFrom slave=0x%02x len=%u", _in.charAt(0), len);
+        __LDBG_printf("requestFrom slave=%02x len=%u", _in.charAt(0), len);
         beginTransmission((uint8_t)_address);
         _onRequest();
         while (_out.length() <= len) {
@@ -185,7 +227,7 @@ void SerialTwoWireMaster::_processData()
             auto address =
 #endif
             _in.read();
-            __LDBG_printf("available=%u addr=0x%02x _addr=0x%02x", _in.available(), address, _address);
+            __LDBG_printf("available=%u addr=%02x _addr=%02x", _in.available(), address, _address);
             // address was already checked
             _read = &_in;
             _onReceive(_in.available());
@@ -209,33 +251,39 @@ void SerialTwoWireMaster::feed(uint8_t data)
         // skip rest of the line cause of invalid data
     }
     else if (_command == NONE) {
-        if (_length == 0 && data != '+') {
+        static_assert(kSerialTwoWireMaxCommandLength < sizeof(_buffer), "invalid size");
+        if ((_length == 0 && data != '+') || _length >= kSerialTwoWireMaxCommandLength) {
             // must start with +
-            __LDBG_printf("discard data=%u", data);
+            __LDBG_printf("discard data=%u length=_length", data, _length);
             _discard();
         }
         else {
-            __LDBG_assert(_length < sizeof(_buffer) - 1, "buf=%-*.*s", (sizeof(_buffer) - 1), (sizeof(_buffer) - 1), _buffer);
             // append
             _buffer[_length++] = data;
             _buffer[_length] = 0;
             if (strcasecmp_P(reinterpret_cast<const char *>(_buffer), _i2c_transmit_cmd) == 0) {
                 _command = TRANSMIT;
                 _length = 0;
+#if DEBUG_SERIALTWOWIRE && DEBUG_BUFFER_ALLOC
+                _transmissions++;
+#endif
             }
             else if (strcasecmp_P(reinterpret_cast<const char *>(_buffer), _i2c_request_cmd) == 0) {
                 _command = REQUEST;
                 _length = 0;
-            }
-            else if (_length >= sizeof(_buffer) - 1) { // buffer full
-                __LDBG_printf("discard length=%u", _length);
-                _discard();
+#if DEBUG_SERIALTWOWIRE && DEBUG_BUFFER_ALLOC
+                _transmissions++;
+#endif
             }
         }
     }
+#if I2C_OVER_UART_ADD_CRC16
+    else if (data == I2C_OVER_UART_CRC_START && !_crcMarker) {
+        _crcMarker = true;
+    }
+#endif
     else if (isxdigit(data)) {
-        __LDBG_assert(_length < sizeof(_buffer) - 1, "buf=%-*.*s", (sizeof(_buffer) - 1), (sizeof(_buffer) - 1), _buffer);
-        __LDBG_assert(_length < 2, "length=%u", _length);
+        __LDBG_assert_printf(_length < sizeof(_buffer) - 1, "buf=%-*.*s", (sizeof(_buffer) - 1), (sizeof(_buffer) - 1), _buffer);
         // add data to command buffer
         _buffer[_length++] = data;
         _addBuffer(_parseData());
@@ -244,5 +292,6 @@ void SerialTwoWireMaster::feed(uint8_t data)
         // invalid data, discard
         __LDBG_printf("discard data=%u", data);
         _discard();
+        _length = 0;
     }
 }

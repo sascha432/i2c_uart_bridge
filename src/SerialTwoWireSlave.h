@@ -6,15 +6,17 @@
 
 #include <Arduino.h>
 #include "SerialTwoWireDef.h"
+#include "SerialTwoWireDebug.h"
 #include "SerialTwoWireStream.h"
 
 class SerialTwoWireSlave : public Stream {
 public:
-    static constexpr size_t kMaxBufferSize = ___max_str_len(I2C_OVER_UART_PREFIX_TRANSMIT, I2C_OVER_UART_PREFIX_REQUEST) + 1;
+    static constexpr size_t kMaxBufferSize = kSerialTwoWireMaxCommandLength + 1;
     static constexpr uint8_t kFillingRequest = 0xff;
     static constexpr uint8_t kFinishedRequest = 0x00;
     static constexpr uint8_t kReadValueOutOfRange = 0xff;
-    static constexpr uint8_t kRequestCommandMaxLength = 2;
+    static constexpr uint8_t kRequestCommandMaxLength = I2C_OVER_UART_REQUEST_COMMAND_LENGTH;
+    static constexpr uint8_t kTransmissionMaxLength = I2C_OVER_UART_MAX_INPUT_LENGTH;
     static constexpr int kNoDataAvailable = -1;
 
 public:
@@ -28,7 +30,7 @@ public:
     typedef std::function<void()> onReadSerialCallback;
 #endif
 
-    typedef enum : int8_t {
+    typedef enum : uint8_t {
         NONE,
         DISCARD,
         TRANSMIT,
@@ -109,16 +111,27 @@ protected:
 protected:
     uint8_t _address;                   // own address
     uint8_t _length;                    // _buffer.length
+#if I2C_OVER_UART_ADD_CRC16
+    uint8_t _command: 7;
+    uint8_t _crcMarker: 1;
+    uint16_t _crc;
+#else
     CommandEnum_t _command;
+#endif
     uint8_t _buffer[kMaxBufferSize];
 
     SerialTwoWireStream _in;            // incoming messages
     SerialTwoWireStream _out;           // output buffer for write
-    Stream &_serial;
 
     onReceiveCallback _onReceive;
     onRequestCallback _onRequest;
     onReadSerialCallback _onReadSerial;
+
+#if DEBUG_SERIALTWOWIRE && DEBUG_BUFFER_ALLOC
+    uint32_t _transmissions;
+#endif
+
+    Stream &_serial;
 };
 
 inline void SerialTwoWireSlave::setSerial(Stream &serial)
