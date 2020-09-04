@@ -16,6 +16,6 @@ void serialEvent()
 
 #endif
 
-const char _i2c_transmit_cmd[] PROGMEM = { I2C_OVER_UART_PREFIX_TRANSMIT };
-const char _i2c_request_cmd[] PROGMEM = { I2C_OVER_UART_PREFIX_REQUEST };
+const char SerialTwoWireDef::transmitCommand[] PROGMEM = { I2C_OVER_UART_PREFIX_TRANSMIT };
+const char SerialTwoWireDef::requestCommand[] PROGMEM = { I2C_OVER_UART_PREFIX_REQUEST };
 

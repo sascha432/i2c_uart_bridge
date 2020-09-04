@@ -9,15 +9,13 @@
 class SerialTwoWireMaster : public SerialTwoWireSlave
 {
 public:
-    SerialTwoWireMaster();
-    SerialTwoWireMaster(Stream &serial);
-    SerialTwoWireMaster(Stream &serial, onReadSerialCallback callback);
+    using SerialTwoWireSlave::SerialTwoWireSlave;
+    using Stream::setTimeout;
 
+    //inline void setTimeout(unsigned long _timeout);
+
+    void begin();
     using SerialTwoWireSlave::begin;
-    inline void begin() {
-        end();
-    }
-    void end();
 
     uint8_t requestFrom(uint8_t address, uint8_t count, uint8_t stop = true);
     inline uint8_t requestFrom(int address, int count, int stop = true) {
@@ -39,6 +37,7 @@ protected:
     uint8_t _waitForResponse(uint8_t address, uint8_t count);
 
 protected:
-    SerialTwoWireStream _request;       // incoming message for requestFrom
-    SerialTwoWireStream *_read;         // points to the message buffer either master or slave
+    // SerialTwoWireStream _request;       // incoming message for requestFrom
+    //SerialTwoWireStream &_request;
+    //SerialTwoWireStream *_read;         // points to the message buffer either master or slave
 };
