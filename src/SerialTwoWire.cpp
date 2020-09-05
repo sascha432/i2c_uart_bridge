@@ -3,6 +3,7 @@
  */
 
 #include "SerialTwoWire.h"
+#include "SerialTwoWireSlave.h"
 #include "SerialTwoWireDebug.h"
 
 #ifndef SERIALTWOWIRE_NO_GLOBALS
@@ -11,7 +12,10 @@ SerialTwoWire Wire;
 
 void serialEvent()
 {
-    Wire._serialEvent();
+    auto &serial = Wire.getSerial();
+    while (serial.isAvailable()) {
+        Wire.feed(serial.read());
+    }
 }
 
 #endif

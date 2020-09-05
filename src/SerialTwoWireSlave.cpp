@@ -6,11 +6,6 @@
 #include "SerialTwoWireSlave.h"
 #include "SerialTwoWireDebug.h"
 
-SerialTwoWireSlave::SerialTwoWireSlave() :
-    SerialTwoWireSlave(Serial)
-{
-}
-
 SerialTwoWireSlave::SerialTwoWireSlave(Stream &serial, onReadSerialCallback callback) :
     _data(),
     _buffer{},
@@ -23,78 +18,31 @@ SerialTwoWireSlave::SerialTwoWireSlave(Stream &serial, onReadSerialCallback call
 
 void SerialTwoWireSlave::begin(uint8_t address)
 {
-    end();
+    __LDBG_assert_printf(isValidAddress(address), "address=%u min=%u max=%u", address, kMinAddress, kMaxAddress);
+    __LDBG_assert_printf(data()._address == kNotInitializedAddress, "begin called again without end");
+    _end();
     data()._address = address;
     _in.reserve(SerialTwoWireStream::kAllocMinSize);
     _out.reserve(SerialTwoWireStream::kAllocMinSize);
-}
-
-void SerialTwoWireSlave::end()
-{
-    data() = Data_t();
-    _in.release();
-    _out.release();
-}
-
-void SerialTwoWireSlave::beginTransmission(uint8_t address)
-{
-    __LDBG_printf("addr=%02x out_state=%u", address, flags()._outState);
-    flags()._setOutState(OutStateType::LOCKED);
-    _out.clear();
-    _out.write(address);
-}
-
-uint8_t SerialTwoWireSlave::endTransmission(uint8_t stop)
-{
-    __LDBG_assert_printf(flags()._getOutState() == OutStateType::LOCKED, "out_state=%u", flags()._outState);
-    if (flags()._getOutState() != OutStateType::LOCKED) {
-        __LDBG_printf("out_state=%u", flags()._outState);
-        return 0;
-    }
-    __LDBG_assert_printf(_out.length() && _out.charAt(0) != data()._address, "len=%u slave=%u master=%u", _out.length(), _out.charAt(0), data()._address);
-    if (_out.charAt(0) == data()._address) {
-        __LDBG_printf("len=%u slave=%u master=%u out_state=%u", _out.length(), _out.charAt(0), data()._address, flags()._outState);
-        _out.clear();
-        flags()._setOutState(OutStateType::NONE);
-        return 0;
-    }
-    return _endTransmission(stop);
-}
-
-uint8_t SerialTwoWireSlave::_endTransmission(uint8_t stop)
-{
-    auto iter = _out.begin();
-    auto end = _out.end();
-#if I2C_OVER_UART_ADD_CRC16
-    uint16_t crc = crc16_update(iter, end - iter);
+#if DEBUG_SERIALTWOWIRE
+    _startMillis = millis();
 #endif
-    // write as fast as possible
-    auto ptr = transmitCommand;
-    uint8_t data;
-    _serial->flush();
-    while((data = pgm_read_byte(ptr++)) != 0) {
-        _serial->write(data);
-    }
-    for(; iter != end; ++iter) {
-        _printHex(*iter);
-    }
-#if I2C_OVER_UART_ADD_CRC16
-    _printHexCrc(crc);
-#else
-    _println();
-#endif
-    _serial->flush();
-    _out.clear();
-    flags()._setOutState(OutStateType::NONE);
+}
 
-    return 0;
+void SerialTwoWireSlave::_end()
+{
+    if (data()._address != kNotInitializedAddress) {
+        data() = Data_t();
+        _in.release();
+        _out.release();
+    }
 }
 
 size_t SerialTwoWireSlave::write(uint8_t data)
 {
-    __LDBG_assert_printf(flags()._outCanWrite(), "out_state=%u", flags()._outState);
+    __LDBG_assert_printf(flags()._outCanWrite(), "outs=%u", flags()._outState);
     if (!flags()._outCanWrite()) {
-        __LDBG_printf("out_state=%u", flags()._outState);
+        __LDBG_printf("outs=%u", flags()._outState);
         return 0;
     }
     return _out.write(data);
@@ -102,9 +50,9 @@ size_t SerialTwoWireSlave::write(uint8_t data)
 
 size_t SerialTwoWireSlave::write(const uint8_t *data, size_t length)
 {
-    __LDBG_assert_printf(flags()._outCanWrite(), "out_state=%u", flags()._outState);
+    __LDBG_assert_printf(flags()._outCanWrite(), "outs=%u", flags()._outState);
     if (!flags()._outCanWrite()) {
-        __LDBG_printf("out_state=%u", flags()._outState);
+        __LDBG_printf("outs=%u", flags()._outState);
         return 0;
     }
     return _out.write(data, (SerialTwoWireStream::size_type)length);
@@ -117,11 +65,7 @@ int SerialTwoWireSlave::available()
 
 int SerialTwoWireSlave::read()
 {
-    auto data = _in.read();
-    if (_in.empty()) {
-        _in.clear();
-    }
-    return data;
+    return _in.read();
 }
 
 int SerialTwoWireSlave::peek()
@@ -129,38 +73,70 @@ int SerialTwoWireSlave::peek()
     return _in.peek();
 }
 
-#if defined(ESP8266)
-
-size_t SerialTwoWireSlave::readBytes(uint8_t *buffer, size_t length)
-{
-    return _in.readBytes(buffer, length);
-}
-
-size_t SerialTwoWireSlave::readBytes(char *buffer, size_t length)
-{
-    return _in.readBytes(reinterpret_cast<uint8_t *>(buffer), length);
-}
-
-#endif
-
 void SerialTwoWireSlave::_newLine()
 {
     // add any data left in the buffer
     _addBuffer(_parseData(true));
 
-    __LDBG_printf("cmd=%u length=%u _in=%u discard=%u out_state=%u", flags()._command, data()._length, _in.length(), (flags()._command <= DISCARD || _in.length() == 0), flags()._outState);
-    if (flags()._command <= DISCARD || _in.length() == 0) {
-        _in.clear();
-    }
-    else {
+    __LDBG_printf("cmd=%u len=%u ilen=%u discard=%u outs=%u ins=%u", flags()._command, data()._length, _in.length(), (flags()._command <= DISCARD || _in.length() == 0), flags()._outState, flags()._inState);
+    if (flags()._command > DISCARD && flags()._inState) {
         _processData();
     }
+    _cleanup();
+}
+
+void SerialTwoWireSlave::_sendAndDiscard()
+{
+#if I2C_OVER_UART_ENABLE_DISCARD_ID
+
+    if (data()._length != 0 && *_buffer == '+') {           // collect discarded message
+        _in.clear();
+        #if I2C_OVER_UART_ENABLE_DISCARD_ID != 43
+            _in.write(I2C_OVER_UART_ENABLE_DISCARD_ID);     // add id to transmission if not '+'
+        #endif
+        _in.write(_buffer, sizeof(_buffer));
+        __LDBG_printf("send_and_discard id=%d ilen=%u", _in.charAt(0), _in.length());
+        flags()._command = SEND_DISCARDED;
+        flags()._inState = true;
+        data()._length = 0;
+        _newTransmission();
+        return;
+    }
+
+#endif
+    __LDBG_printf("discard len=%u max=%u", data()._length, kCommandMaxLength);
+    data()._length = 0;
+    _discard();
+}
+
+void SerialTwoWireSlave::_cleanup()
+{
     flags()._command = NONE;
     data()._length = 0;
+    if (flags()._inState) {
+        _in.clear();
+        flags()._inState = false;
+    }
+    //if (flags()._outIsFilling()) {
+    //    flags()._setOutState(OutStateType::NONE);
+    //}
 #if I2C_OVER_UART_ADD_CRC16
     flags()._crcMarker = false;
     flags()._crc = ~0;
 #endif
+}
+
+void SerialTwoWireSlave::_sendNack(uint8_t address)
+{
+    _serial->flush();
+    _serial->print(FPSTR(transmitCommand));
+#if I2C_OVER_UART_ADD_CRC16
+    TODO
+#else
+    _printHex(address);
+    _println();
+#endif
+    _serial->flush();
 }
 
 void SerialTwoWireSlave::feed(uint8_t byte)
@@ -168,15 +144,13 @@ void SerialTwoWireSlave::feed(uint8_t byte)
     if (byte == '\n') { // check first
         _newLine();
     }
-    else if (flags()._command == DISCARD || byte == '\r') {
+    else if (flags()._command == DISCARD || flags()._command == CommandEnum_t::SEND_DISCARDED || byte == '\r') {
         // skip rest of the line cause of invalid data
     }
     else if (flags()._command == NONE) {
-        //static_assert(kMaxTransmissionLength < sizeof(_buffer), "invalid size");
-        if ((data()._length == 0 && byte != '+') || data()._length >= kMaxTransmissionLength) {
-            // must start with +
-            __LDBG_printf("discard data=%u", byte);
-            _discard();
+        //static_assert(kCommandMaxLength < sizeof(_buffer), "invalid size");
+        if ((data()._length == 0 && byte != '+') || data()._length >= kCommandMaxLength) {
+            _sendAndDiscard();
         }
         else {
             __LDBG_assert_printf(data()._length < sizeof(_buffer) - 1, "buf=%-*.*s", (sizeof(_buffer) - 1), (sizeof(_buffer) - 1), _buffer);
@@ -186,10 +160,7 @@ void SerialTwoWireSlave::feed(uint8_t byte)
             if (strcasecmp_P(reinterpret_cast<const char *>(_buffer), transmitCommand) == 0) {
                 flags()._command = TRANSMIT;
                 data()._length = 0;
-            }
-            else if (data()._length >= sizeof(_buffer) - 1) { // buffer full
-                __LDBG_printf("discard length=%u", data()._length);
-                _discard();
+                _newTransmission();
             }
         }
     }
@@ -218,7 +189,7 @@ int SerialTwoWireSlave::_parseData(bool lastByte)
     }
 #if I2C_OVER_UART_ADD_CRC16
     else if (data()._length > 4) {
-        __LDBG_printf("discard length=%u", data()._length);
+        __LDBG_printf("discard len=%u", data()._length);
         _discard();
         return kNoDataAvailable;
     }
@@ -234,7 +205,7 @@ int SerialTwoWireSlave::_parseData(bool lastByte)
             }
             __LDBG_printf("discard crc=%04x flags()._crc=%04x", flags()._crc, crc);
         }
-        __LDBG_printf("discard length=%u", data()._length);
+        __LDBG_printf("discard len=%u", data()._length);
         _discard();
         return kNoDataAvailable;
     }
@@ -244,13 +215,13 @@ int SerialTwoWireSlave::_parseData(bool lastByte)
 #else
     else if (data()._length > 2) {
         __LDBG_assert_printf(data()._length <= 2, "cmd=%u len=%u last_byte=%u buf=%-*.*s", flags()._command, data()._length, lastByte, (sizeof(_buffer) - 1), (sizeof(_buffer) - 1), _buffer);
-        __LDBG_printf("discard length=%u", data()._length);
+        __LDBG_printf("discard len=%u", data()._length);
         _discard();
         return kNoDataAvailable;
     }
 #endif
     else if (lastByte && data()._length == 1) {
-        __LDBG_printf("discard length=%u", data()._length);
+        __LDBG_printf("discard len=%u", data()._length);
         _discard();
         return kNoDataAvailable;
     }
@@ -273,8 +244,9 @@ void SerialTwoWireSlave::_addBuffer(int byte)
     if (byte == kNoDataAvailable) {
         return;
     }
-    if (_in.length()) {
+    if (flags()._inState) {
         if (_in.length() >= kTransmissionMaxLength) {
+            __LDBG_printf("data=%u ilen=%u max=%u", byte, _in.length(), kTransmissionMaxLength);
             _discard();
         }
         else {
@@ -283,10 +255,10 @@ void SerialTwoWireSlave::_addBuffer(int byte)
         }
     }
     else {
-        __LDBG_assert_printf(_in.length() == 0, "length=%u data=%d", data()._length, byte);
+        __LDBG_assert_printf(_in.length() == 0, "len=%u data=%d", data()._length, byte);
         if (byte == data()._address) {
-            // add address to buffer to indicate its use
-            _in.write(byte);
+            // mark as being in use
+            flags()._inState = true;
         }
         else {
             // invalid address, discard
@@ -297,26 +269,38 @@ void SerialTwoWireSlave::_addBuffer(int byte)
     data()._length = 0;
 }
 
-void SerialTwoWireSlave::_processData()
+void SerialTwoWireSlave::_preProcess()
 {
-    if (_in.length() == 1) {
+    if (flags()._inState && _in.length() == 0) {
         // no data, discard
-        _in.clear();
+        __LDBG_printf("iavail=%u ilen=%u", _in.available(), _in.length());
+        _discard();
     }
-    if (flags()._command == TRANSMIT) {
-        if (_in.length()) {
-            __LDBG_printf("available=%u addr=%02x _addr=%02x", _in.available(), _in.peek(), data()._address);
-            _in.read();
-            // address was already checked
-            _onReceive(_in.available());
-            _in.clear();
-        }
+#if I2C_OVER_UART_ENABLE_DISCARD_COMMAND
+    switch (flags()._command) {
+    case CommandEnum_t::SEND_DISCARDED:
+        __LDBG_printf("iavail=%u ilen=%u id=%02x", _in.available(), _in.length(), _in.charAt(0));
+        flags()._readFromOut = false;
+        _onReceive(_in.available());
+        flags()._readFromOut = true;
+        break;
     }
+#endif
 }
 
-void SerialTwoWireSlave::_serialEvent()
+void SerialTwoWireSlave::_processData()
 {
-    while (_serial->available()) {
-        feed(_serial->read());
+    _preProcess();
+
+    switch(flags()._command) {
+    case CommandEnum_t::TRANSMIT:
+        if (flags()._inState) {
+            __LDBG_assert_printf(_in.length() == _in.available(), "ilen=%u iavail=%u", _in.length(), _in.available());
+            __LDBG_printf("iavail=%u ilen=%u _addr=%02x", _in.available(), _in.length(), data()._address);
+            flags()._readFromOut = false;
+            _onReceive(_in.available());
+            flags()._readFromOut = true;
+        }
+        break;
     }
 }

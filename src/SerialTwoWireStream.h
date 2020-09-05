@@ -17,8 +17,16 @@ using namespace SerialTwoWireDef;
 
 #if SERIALTWOWIRE_USE_OWN_STREAM_CLASS
 
-constexpr bool __constexpr_is_bitmask(size_t num, size_t bits = 31) {
-    return bits == ~0U ? false : (num == (1U << bits) ? true : __constexpr_is_bitmask(num, bits - 1));
+//
+// small, fast, better dynamic memory mamangement and does not required much memory
+//
+// numbers for 32bit alignment
+// static constexpr size_t SerialTwoWireStreamSize = sizeof(SerialTwoWireStream);          // 12
+// static constexpr size_t BufferStreamSize = sizeof(BufferStream);                        // 44
+// static constexpr size_t StreamStringSize = sizeof(StreamString);                        // 52
+
+constexpr bool __constexpr_is_bitmask(size_t num, uint16_t bits = 15) {
+    return num == 0U || bits == 0U ? false : ((num == (1U << bits) ? true : __constexpr_is_bitmask(num, bits - 1)));
 }
 
 class SerialTwoWireStream {
@@ -27,130 +35,48 @@ public:
 
     static constexpr size_type kAllocMinSize = I2C_OVER_UART_ALLOC_MIN_SIZE;
     static constexpr size_type kAllocBlockSize = I2C_OVER_UART_ALLOC_BLOCK_SIZE;
-    static constexpr size_type kAlllocBlockBitMask = __constexpr_is_bitmask(kAllocBlockSize) ? (kAllocBlockSize - 1) : 0;
+    static constexpr size_type kAllocBlockBitMask = __constexpr_is_bitmask(kAllocBlockSize) ? (kAllocBlockSize - 1) : 0;
 
-    SerialTwoWireStream() : _buffer(nullptr), _length(0), _size(0), _position(0) {}
-    ~SerialTwoWireStream() {
-        release();
-    }
+    SerialTwoWireStream(const SerialTwoWireStream &) = delete;
+    SerialTwoWireStream &operator=(const SerialTwoWireStream &) = delete;
+    SerialTwoWireStream(SerialTwoWireStream &&move) = delete;
+    SerialTwoWireStream &operator=(SerialTwoWireStream &&move) = delete;
+
+    SerialTwoWireStream();
+    ~SerialTwoWireStream();
+
+    void setAllocMinSize(uint8_t size);
 
     void clear();
     void release();
 
-    inline int read() {
-        if (_position < _length) {
-            return _buffer[_position++];
-        }
-        return -1;
-    }
+    int read();
+    int peek();
+    uint8_t charAt(int offset) const;
 
-    inline int peek() {
-        if (_position < _length) {
-            return _buffer[_position];
-        }
-        return -1;
-    }
+    uint8_t operator[](int offset) const;
+    uint8_t &operator[](int offset);
 
-    inline uint8_t charAt(int offset) const {
-        if ((size_t)offset >= _length) {
-            return 0;
-        }
-        return _buffer[offset];
-    }
+    size_type write(uint8_t data);
+    size_type write(const uint8_t *data, size_t len);
 
-    inline uint8_t operator[](int offset) const {
-        return _buffer[offset];
-    }
+    size_type length() const;
+    size_type size() const;
+    size_t available() const;
+    bool empty() const;
 
-    inline uint8_t &operator[](int offset) {
-        return _buffer[offset];
-    }
+    size_type push_back(uint8_t data);      // write
 
-    inline size_type write(uint8_t data) {
-        if (_length < _size) {
-            _buffer[_length++] = data;
-        }
-        else {
-            if (!resize(_length + 1)) {
-                release();
-                return 0;
-            }
-            _buffer[_length++] = data;
-        }
-        return 1;
-    }
+    int pop_back();                         // undo write
+    int pop_front();                        // read
 
-    inline size_type write(const uint8_t *data, size_type len) {
-        size_type required = len + _length;
-        if (required >= _size) {
-            if (!resize(required + 1)) {
-                return 0;
-            }
-        }
-        std::copy_n(data, len, &_buffer[_length]);
-        _length += len;
-        return len;
-    }
+    uint8_t *begin();
+    uint8_t *end();
 
-    inline size_type length() const {
-        return _length;
-    }
+    size_type read(uint8_t *data, size_t length);
+    size_t readBytes(uint8_t *data, size_t len);
 
-    inline size_type size() const {
-        return _size;
-    }
-
-    inline size_t available() const {
-        return _length - _position;
-    }
-
-    inline bool empty() const {
-        return _length == _position;
-    }
-
-    inline size_type push_back(uint8_t data) {
-        return write(data);
-    }
-
-    inline int pop_back() {
-        if (_length > 0) {
-            if (_position >= _length) {
-                _position--;
-            }
-            return _buffer[--_length];
-        }
-        return -1;
-    }
-
-    inline int pop_front() {
-        return read();
-    }
-
-    uint8_t *begin() {
-        return &_buffer[_position];
-    }
-
-    uint8_t *end() {
-        return &_buffer[_length];
-    }
-
-    inline size_type read(uint8_t *data, size_type len) {
-        size_type avail = _length - _position;
-        if (len > avail) {
-            len = avail;
-        }
-        std::copy_n(begin(), len, data);
-        _position += len;
-        return len;
-    }
-
-    inline size_t readBytes(uint8_t *data, size_t len) {
-        return read(data, (size_type)len);
-    }
-
-    inline bool reserve(size_type new_size) {
-        return new_size <= _size ? true : resize(new_size);
-    }
+    bool reserve(size_type new_size);
 
 private:
     bool resize(size_type size);
@@ -161,7 +87,10 @@ private:
     size_type _length;
     size_type _size;
     size_type _position;
+    uint8_t _allocMinSize;
 };
+
+#include "SerialTwoWireStream.hpp"
 
 #elif SERIALTWOWIRE_USE_BUFFERSTREAM
 
@@ -197,6 +126,8 @@ public:
         // remove data that has been read and resize buffer to max. length + 15
         BufferStream::removeAndShrink(0, position(), kAllocMinSize);
     }
+
+    inline void setAllocMinSize(uint8_t size) {}
 };
 
 #else
@@ -234,6 +165,8 @@ public:
             String::changeBuffer(size);
         }
     }
+
+    inline void setAllocMinSize(uint8_t size) {}
 };
 
 #endif
