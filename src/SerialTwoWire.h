@@ -46,7 +46,7 @@ static inline void optimistic_yield(uint32_t) {
 
 #ifndef SERIALTWOWIRE_NO_GLOBALS
 
-void serialEvent();
+extern "C" void serialEvent();
 
 extern SerialTwoWire Wire;
 

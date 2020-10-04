@@ -9,6 +9,13 @@
 #include "SerialTwoWireStream.h"
 #include "SerialTwoWireDebug.h"
 
+#ifndef SERIALTWOWIRE_NO_GLOBALS
+
+extern "C" void serialEvent();
+
+#endif
+
+
 using namespace SerialTwoWireDef;
 
 class SerialTwoWireSlave : public Stream {
@@ -116,10 +123,10 @@ protected:
 #if I2C_OVER_UART_ADD_CRC16
             _crc(~0),
 #endif
-            _command(0), 
-            _readFromOut(true), 
-            _crcMarker(0), 
-            _outState(0), 
+            _command(0),
+            _readFromOut(true),
+            _crcMarker(0),
+            _outState(0),
             _inState(false)
         {
         }
