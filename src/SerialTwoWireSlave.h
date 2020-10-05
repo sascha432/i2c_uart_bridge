@@ -11,7 +11,7 @@
 
 #ifndef SERIALTWOWIRE_NO_GLOBALS
 
-extern "C" void serialEvent();
+void serialEvent();
 
 #endif
 

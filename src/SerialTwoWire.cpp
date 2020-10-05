@@ -10,10 +10,11 @@
 
 SerialTwoWire Wire;
 
-extern "C" void serialEvent()
+void serialEvent()
 {
     auto &serial = Wire.getSerial();
     while (serial.available()) {
+        serial.print((char)serial.peek());
         Wire.feed(serial.read());
     }
 }
