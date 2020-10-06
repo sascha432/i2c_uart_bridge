@@ -5,8 +5,6 @@
 #include "SerialTwoWireStream.h"
 #include "SerialTwoWireDebug.h"
 
-#if SERIALTWOWIRE_USE_OWN_STREAM_CLASS
-
 void SerialTwoWireStream::clear()
 {
 	_position = 0;
@@ -88,7 +86,7 @@ bool SerialTwoWireStream::resize(size_type new_size)
 
 SerialTwoWireStream::size_type SerialTwoWireStream::_get_block_size(size_type new_size) const
 {
-	size_type blockSize = new_size < _allocMinSize ? _allocMinSize : new_size;
+	size_type blockSize = new_size < _get_alloc_min_size() ? _get_alloc_min_size() : new_size;
 	if (kAllocBlockBitMask != 0) {
 		return (blockSize + kAllocBlockBitMask) & ~kAllocBlockBitMask;
 	}
@@ -118,5 +116,3 @@ SerialTwoWireStream::size_type SerialTwoWireStream::_resize(size_type new_size)
 	}
 	return 0;
 }
-
-#endif

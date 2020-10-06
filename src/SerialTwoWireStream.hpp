@@ -11,13 +11,15 @@
 
 inline SerialTwoWireStream::SerialTwoWireStream() :
 	_buffer(nullptr),
-	_length(0), _size(0),
+	_length(0),
 	_position(0),
-	_allocMinSize(kAllocMinSize)
+	_size(0),
+	_allocMinSize(0)
 {
+	setAllocMinSize(kAllocMinSize);
 }
 
-inline SerialTwoWireStream::~SerialTwoWireStream() 
+inline SerialTwoWireStream::~SerialTwoWireStream()
 {
     release();
 }
@@ -38,12 +40,25 @@ inline SerialTwoWireStream::~SerialTwoWireStream()
 //    return*this;
 //}
 
-inline void SerialTwoWireStream::setAllocMinSize(uint8_t size) 
+inline void SerialTwoWireStream::setAllocMinSize(uint8_t size)
 {
-    _allocMinSize = size;
+#if SERIALTWOWIRE_STREAM_CLASS_MAX_LEN < 512
+	// 0 - 16, 32, 48, 64 ... 256
+	_allocMinSize = size > 15 ? (16 + ((size + 15) / 16)) : size;
+#else
+	_allocMinSize = size;
+#endif
 }
 
-inline int SerialTwoWireStream::read() 
+inline SerialTwoWireStream::size_type SerialTwoWireStream::_get_alloc_min_size() const {
+#if SERIALTWOWIRE_STREAM_CLASS_MAX_LEN < 512
+    return _allocMinSize > 15 ? (_allocMinSize * 16) - 256 : _allocMinSize;
+#else
+    return _allocMinSize;
+#endif
+}
+
+inline int SerialTwoWireStream::read()
 {
     if (_position < _length) {
         return _buffer[_position++];
@@ -51,7 +66,7 @@ inline int SerialTwoWireStream::read()
     return -1;
 }
 
-inline int SerialTwoWireStream::peek() 
+inline int SerialTwoWireStream::peek()
 {
     if (_position < _length) {
         return _buffer[_position];
@@ -59,7 +74,7 @@ inline int SerialTwoWireStream::peek()
     return -1;
 }
 
-inline uint8_t SerialTwoWireStream::charAt(int offset) const 
+inline uint8_t SerialTwoWireStream::charAt(int offset) const
 {
     if ((size_t)offset >= _length) {
         return 0;
@@ -67,42 +82,42 @@ inline uint8_t SerialTwoWireStream::charAt(int offset) const
     return _buffer[offset];
 }
 
-inline uint8_t SerialTwoWireStream::operator[](int offset) const 
+inline uint8_t SerialTwoWireStream::operator[](int offset) const
 {
     return _buffer[offset];
 }
 
-inline uint8_t &SerialTwoWireStream::operator[](int offset) 
+inline uint8_t &SerialTwoWireStream::operator[](int offset)
 {
     return _buffer[offset];
 }
 
-inline SerialTwoWireStream::size_type SerialTwoWireStream::length() const 
+inline SerialTwoWireStream::size_type SerialTwoWireStream::length() const
 {
 	return _length;
 }
 
-inline size_t SerialTwoWireStream::available() const 
+inline size_t SerialTwoWireStream::available() const
 {
 	return _length - _position;
 }
 
-inline SerialTwoWireStream::size_type SerialTwoWireStream::size() const 
+inline SerialTwoWireStream::size_type SerialTwoWireStream::size() const
 {
 	return _size;
 }
 
-inline bool SerialTwoWireStream::empty() const 
+inline bool SerialTwoWireStream::empty() const
 {
 	return _length == _position;
 }
 
-inline SerialTwoWireStream::size_type SerialTwoWireStream::push_back(uint8_t data) 
+inline SerialTwoWireStream::size_type SerialTwoWireStream::push_back(uint8_t data)
 {
 	return write(data);
 }
 
-inline int SerialTwoWireStream::pop_back() 
+inline int SerialTwoWireStream::pop_back()
 {
 	if (_length > 0) {
 		if (_position >= _length) {
@@ -113,27 +128,27 @@ inline int SerialTwoWireStream::pop_back()
 	return -1;
 }
 
-inline int SerialTwoWireStream::pop_front() 
+inline int SerialTwoWireStream::pop_front()
 {
 	return read();
 }
 
-inline uint8_t *SerialTwoWireStream::begin() 
+inline uint8_t *SerialTwoWireStream::begin()
 {
 	return &_buffer[_position];
 }
 
-inline uint8_t *SerialTwoWireStream::end() 
+inline uint8_t *SerialTwoWireStream::end()
 {
 	return &_buffer[_length];
 }
 
-inline size_t SerialTwoWireStream::readBytes(uint8_t *data, size_t len) 
+inline size_t SerialTwoWireStream::readBytes(uint8_t *data, size_t len)
 {
     return read(data, len);
 }
 
-inline bool SerialTwoWireStream::reserve(size_type new_size) 
+inline bool SerialTwoWireStream::reserve(size_type new_size)
 {
     return new_size <= _size ? true : resize(new_size);
 }

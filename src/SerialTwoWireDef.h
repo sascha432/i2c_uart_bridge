@@ -16,7 +16,7 @@ namespace SerialTwoWireDef {
     #define DEBUG_SERIALTWOWIRE                     0
     #endif
 
-    // increases serial data by 4 byte, required buffer length by 2 and processing time
+    // increases serial data by 4 byte, required buffer length by 2 and increases processing time
     #ifndef I2C_OVER_UART_ADD_CRC16
     #define I2C_OVER_UART_ADD_CRC16                 0
     #endif
@@ -29,7 +29,11 @@ namespace SerialTwoWireDef {
     #error check if stl support is available
     #endif
 
-    #define SERIALTWOWIRE_USE_OWN_STREAM_CLASS      1
+    // possible values are 511 or 65535
+    // I2C is limited to 255 bytes + kCommandBufferSize (7 by default)
+    #ifndef SERIALTWOWIRE_STREAM_CLASS_MAX_LEN
+    #define SERIALTWOWIRE_STREAM_CLASS_MAX_LEN      511
+    #endif
 
     #if I2C_OVER_UART_ADD_CRC16
     static constexpr uint8_t kRequestTransmissionMaxLength = 2 + sizeof(uint16_t);
@@ -53,11 +57,12 @@ namespace SerialTwoWireDef {
     #define I2C_OVER_UART_PREFIX_REQUEST            "+I2CR="
     #endif
 
-    // any commands that starts with '+' but does match transmit or request will be forwarded
-    // to the on received callback. set to 0 to disable
+    // any command that starts with '+' but does match I2C_OVER_UART_PREFIX_TRANSMIT or
+    // I2C_OVER_UART_PREFIX_REQUEST will be forwarded to the onReceived callback.
+    // set to 0 to disable. any other number will limit the data that is collected
     #ifndef I2C_OVER_UART_ENABLE_DISCARD_COMMAND
     #define I2C_OVER_UART_ENABLE_DISCARD_COMMAND    0
-    //#define I2C_OVER_UART_ENABLE_DISCARD_COMMAND    19
+    //#define I2C_OVER_UART_ENABLE_DISCARD_COMMAND    19 // collect up to 19 byte
     #endif
 
     // first byte to identify discarded transmissions (onReceive callback)

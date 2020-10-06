@@ -8,6 +8,10 @@ It supports master-slave and master-master communication.
 
 Supported platforms are atmelavr, espressif8266 and espressif32. Visual Studio 2019 can be used to compile native Win32 applications. This requires an Arduino library that compiles for this target.
 
+## Changel log
+
+[Change Log v0.2.0](CHANGELOG.md)
+
 ## Example of serial communication
 
     SoftwareSerial SoftSerial(8, 9);
