@@ -6,6 +6,11 @@
 
 #include "SerialTwoWireSlave.h"
 
+#if DEBUG_SERIALTWOWIRE
+#include <debug_helper.h>
+#include <debug_helper_enable.h>
+#endif
+
 inline SerialTwoWireSlave::SerialTwoWireSlave() : SerialTwoWireSlave(Serial)
 {
 }
@@ -201,3 +206,7 @@ inline Stream *SerialTwoWireSlave::getSerial() const {
 inline Stream &SerialTwoWireSlave::getSerial() {
     return *_serial;
 }
+
+#if DEBUG_SERIALTWOWIRE
+#include <debug_helper_disable.h>
+#endif

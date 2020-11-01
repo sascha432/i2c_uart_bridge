@@ -6,6 +6,11 @@
 
 #include "SerialTwoWireMaster.h"
 
+#if DEBUG_SERIALTWOWIRE
+#include <debug_helper.h>
+#include <debug_helper_enable.h>
+#endif
+
 inline void SerialTwoWireMaster::begin()
 {
     __LDBG_assert_printf(data()._address == kNotInitializedAddress, "begin called again without end");
@@ -66,3 +71,7 @@ inline SerialTwoWireStream &SerialTwoWireMaster::_request()
 {
     return _out;
 }
+
+#if DEBUG_SERIALTWOWIRE
+#include <debug_helper_disable.h>
+#endif

@@ -13,6 +13,11 @@
 class SerialTwoWireSlave;
 class SerialTwoWireMaster;
 
+#if DEBUG_SERIALTWOWIRE
+#include <debug_helper.h>
+#include <debug_helper_enable.h>
+#endif
+
 using namespace SerialTwoWireDef;
 
 //
@@ -113,3 +118,6 @@ private:
 
 static constexpr size_t SerialTwoWireStreamSize = sizeof(SerialTwoWireStream);
 
+#if DEBUG_SERIALTWOWIRE
+#include <debug_helper_disable.h>
+#endif

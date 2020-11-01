@@ -17,6 +17,11 @@ using SerialTwoWire = SerialTwoWireMaster;
 using SerialTwoWire = SerialTwoWireSlave;
 #endif
 
+#if DEBUG_SERIALTWOWIRE
+#include <debug_helper.h>
+#include <debug_helper_enable.h>
+#endif
+
 #if defined(ESP8266) || defined(ESP32)
 
 #elif __AVR__
@@ -50,4 +55,8 @@ void serialEvent();
 
 extern SerialTwoWire Wire;
 
+#endif
+
+#if DEBUG_SERIALTWOWIRE
+#include <debug_helper_disable.h>
 #endif

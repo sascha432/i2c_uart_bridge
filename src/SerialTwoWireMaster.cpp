@@ -6,6 +6,11 @@
 #include "SerialTwoWireMaster.h"
 #include "SerialTwoWireDebug.h"
 
+#if DEBUG_SERIALTWOWIRE
+#include <debug_helper.h>
+#include <debug_helper_enable.h>
+#endif
+
 #pragma push_macro("new")
 #undef new
 
@@ -236,7 +241,7 @@ void SerialTwoWireMaster::_processData()
     case CommandEnum_t::REQUEST:
         if (true) {
             // request has address and length only
-            __LDBG_printf("requestFrom addr=%02x len=%u", data()._address, in.charAt(0));
+            __LDBG_printf("requestFrom addr=%02x len=%u", data()._address, _in.charAt(0));
             _in.clear();
             if (flags()._getOutState() != OutStateType::NONE) {
                 // cannot accept request while requestFrom() is waiting
@@ -266,9 +271,14 @@ void SerialTwoWireMaster::_processData()
     }
 }
 
+// PrintString tmpstr;
+
 void SerialTwoWireMaster::feed(uint8_t byte)
 {
+    // tmpstr.printf_P(PSTR("%c"), byte);
     if (byte == '\n') { // check first
+        // __DBG_printf("%s", tmpstr.c_str());
+        // tmpstr=String();
         _newLine();
     }
     else if (flags()._command == CommandEnum_t::DISCARD || flags()._command == CommandEnum_t::SEND_DISCARDED || byte == '\r') {

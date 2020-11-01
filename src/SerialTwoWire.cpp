@@ -6,6 +6,11 @@
 #include "SerialTwoWireSlave.h"
 #include "SerialTwoWireDebug.h"
 
+#if DEBUG_SERIALTWOWIRE
+#include <debug_helper.h>
+#include <debug_helper_enable.h>
+#endif
+
 #ifndef SERIALTWOWIRE_NO_GLOBALS
 
 SerialTwoWire Wire;

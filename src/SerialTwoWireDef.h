@@ -8,6 +8,11 @@
 
 #include <Arduino.h>
 
+#if DEBUG_SERIALTWOWIRE
+#include <debug_helper.h>
+#include <debug_helper_enable.h>
+#endif
+
 class Serial;
 
 namespace SerialTwoWireDef {
@@ -159,3 +164,7 @@ namespace SerialTwoWireDef {
     static_assert(kCommandMaxLength >= 4, "min. size required");
 
 }
+
+#if DEBUG_SERIALTWOWIRE
+#include <debug_helper_disable.h>
+#endif

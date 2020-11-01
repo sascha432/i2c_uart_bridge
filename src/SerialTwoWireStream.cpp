@@ -5,6 +5,11 @@
 #include "SerialTwoWireStream.h"
 #include "SerialTwoWireDebug.h"
 
+#if DEBUG_SERIALTWOWIRE
+#include <debug_helper.h>
+#include <debug_helper_enable.h>
+#endif
+
 void SerialTwoWireStream::clear()
 {
 	_position = 0;

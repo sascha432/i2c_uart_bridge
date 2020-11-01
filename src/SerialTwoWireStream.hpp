@@ -6,6 +6,11 @@
 
 #include "SerialTwoWireStream.h"
 
+#if DEBUG_SERIALTWOWIRE
+#include <debug_helper.h>
+#include <debug_helper_enable.h>
+#endif
+
 #pragma push_macro("new")
 #undef new
 
@@ -154,3 +159,7 @@ inline bool SerialTwoWireStream::reserve(size_type new_size)
 }
 
 #pragma pop_macro("new")
+
+#if DEBUG_SERIALTWOWIRE
+#include <debug_helper_disable.h>
+#endif
