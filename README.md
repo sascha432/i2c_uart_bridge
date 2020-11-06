@@ -75,9 +75,15 @@ The master sends requests to the serial port.
 
 #### Receiving from slaves
 
-+I2CT=\<address\>\<data\>[\<data\>[...]]\<LF\>
++I2CA=\<address\>\<data\>[\<data\>[...]]\<LF\>
 
 Master and slave are reading transmissions from the serial port.
+
+#### Additional output
+
+Master and slave might send additional information using the REM comand
+
++REM=...
 
 ## Concurrency and collisions
 

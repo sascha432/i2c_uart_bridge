@@ -33,7 +33,7 @@ uint8_t SerialTwoWireMaster::requestFrom(uint8_t address, uint8_t count, uint8_t
 #endif
     // write as fast as possible
     _serial->flush();
-    size_t written = _serial->print(FPSTR(requestCommand));
+    size_t written = sendCommandStr(*_serial, CommandStringType::MASTER_REQUEST);
     written += _printHex(address);
     written += _printHex(count);
 #if I2C_OVER_UART_ADD_CRC16
@@ -44,8 +44,8 @@ uint8_t SerialTwoWireMaster::requestFrom(uint8_t address, uint8_t count, uint8_t
     }
 #else
     written += _println();
-    __LDBG_assert_printf(written == kRequestCommandLength + 5, "written=%u expected=%u", written,kRequestCommandLength + 5);
-    if (written != kRequestCommandLength + 5) {
+    __LDBG_assert_printf(written == kRequestCommandLength + 5, "written=%u expected=%u", written, kRequestCommandLength + 5);
+    if (written != kCommandMaxLength + 5) {
         return 0;
     }
 #endif
@@ -88,65 +88,6 @@ uint8_t SerialTwoWireMaster::_waitForResponse(uint8_t address, uint8_t count)
     return 0;
 }
 
-
-void SerialTwoWireMaster::beginTransmission(uint8_t address)
-{
-    __LDBG_printf("addr=%02x outs=%u", address, flags()._outState);
-    flags()._setOutState(OutStateType::LOCKED);
-    _out.clear();
-    _out.write(address);
-}
-
-uint8_t SerialTwoWireMaster::endTransmission(uint8_t stop)
-{
-    EndTransmissionCode code = EndTransmissionCode::SUCCESS;
-    int address = _out.peek();
-    __LDBG_assert_printf(flags()._getOutState() == OutStateType::LOCKED && _out.available() && address != data()._address && isValidAddress(address), "oavail=%u olen=%u slave=%d master=%d outs=%u ins=%u", _out.available(), _out.length(), address, data()._address, flags()._outState, flags()._inState);
-    if (flags()._getOutState() != OutStateType::LOCKED) {
-        code = EndTransmissionCode::END_WITHOUT_BEGIN;
-    }
-    else if (!isValidAddress(address)) {
-        __LDBG_printf("oavail=%u olen=%u slave=%d master=%d outs=%u ins=%u", _out.available(), _out.length(), address, data()._address, flags()._outState, flags()._inState);
-        code = EndTransmissionCode::INVALID_ADDRESS;
-    }
-    else if (address == data()._address) {
-        code = EndTransmissionCode::OWN_ADDRESS;
-    }
-    if (code == EndTransmissionCode::SUCCESS) {
-        return _endTransmission(stop);
-    }
-    __LDBG_printf("code=%d oavail=%u olen=%u slave=%d master=%d outs=%u ins=%u", code, _out.available(), _out.length(), address, data()._address, flags()._outState, flags()._inState);
-    _out.clear();
-    flags()._setOutState(OutStateType::NONE);
-    return static_cast<uint8_t>(code);
-
-}
-
-uint8_t SerialTwoWireMaster::_endTransmission(uint8_t stop)
-{
-    auto iter = _out.begin();
-    auto end = _out.end();
-#if I2C_OVER_UART_ADD_CRC16
-    uint16_t crc = crc16_update(iter, end - iter);
-#endif
-    // write as fast as possible
-    _serial->flush();
-    _serial->print(FPSTR(transmitCommand));
-    for (; iter != end; ++iter) {
-        _printHex(*iter);
-    }
-#if I2C_OVER_UART_ADD_CRC16
-    _printHexCrc(crc);
-#else
-    _println();
-#endif
-    _serial->flush();
-    _out.clear();
-    flags()._setOutState(OutStateType::NONE);
-
-    return static_cast<uint8_t>(EndTransmissionCode::SUCCESS);
-}
-
 int SerialTwoWireMaster::available()
 {
     return isAvailable();
@@ -170,12 +111,12 @@ void SerialTwoWireMaster::_newLine()
     __LDBG_printf("cmd=%u len=%u ilen=%u rlen=%u discard=%u outs=%u ins=%u",
         flags()._command, data()._length, _in.length(),
         (flags()._getOutState() == OutStateType::FILLING ? _request().length() : 0),
-        (flags()._command <= DISCARD || (_in.length() == 0 && flags()._outIsFilling() == false)),
+        (flags()._getCommand() <= CommandType::DISCARD || (_in.length() == 0 && flags()._outIsFilling() == false)),
         flags()._outState,
         flags()._inState
     );
 
-    if (flags()._command > DISCARD && (flags()._inState || flags()._outIsFilling())) {
+    if (flags()._getCommand() > CommandType::DISCARD && (flags()._inState || flags()._outIsFilling())) {
         _processData();
     }
     _cleanup();
@@ -199,7 +140,7 @@ void SerialTwoWireMaster::_addBuffer(int byte)
     }
     else if (flags()._inState) {
         // write to _in
-        if (flags()._command == REQUEST && _in.length() >= kRequestTransmissionMaxLength) {
+        if (flags()._getCommand() == CommandType::MASTER_REQUEST && _in.length() >= kRequestTransmissionMaxLength) {
             __LDBG_printf("data=%d ilen=%u max=%u", byte, _in.length(), kRequestTransmissionMaxLength);
             _discard();
         }
@@ -212,10 +153,17 @@ void SerialTwoWireMaster::_addBuffer(int byte)
         }
     }
     else {
-        __LDBG_assert_printf(_in.length() == 0, "len=%u data=%d", data()._length, byte);
+        __LDBG_assert_printf(_in.length() == 0, "len=%u data=%d cmd=%s", data()._length, byte, data()._getCommandAsString().c_str());
         if (byte == data()._address) {
-            // mark as being in use
-            flags()._inState = true;
+            if (data()._getCommand() == CommandType::SLAVE_RESPONSE) {
+                // discard response from own address
+                __LDBG_printf("addr=%02x _addr=%02x _request=%02x outs=%u", byte, data()._address, _request().charAt(0) & 0xffff, (int)flags()._outState);
+                _discard();
+            }
+            else {
+                // mark as being in use
+                flags()._inState = true;
+            }
         }
         else if (_request().length() == 1 && flags()._getOutState() == OutStateType::FILL && _request()[0] == byte) {
             // mark as being processed
@@ -225,7 +173,7 @@ void SerialTwoWireMaster::_addBuffer(int byte)
             __LDBG_printf("addr=%02x outs=%u ravail=%u rlen=%u", _request()[0], flags()._outState, _request().available(), _request().length());
         }
         else {
-            // invalid address, discard
+            // discard data from invalid address
             __LDBG_printf("addr=%02x _addr=%02x _request=%02x outs=%u", byte, data()._address, _request().charAt(0) & 0xffff, flags()._outState);
             _discard();
         }
@@ -237,8 +185,8 @@ void SerialTwoWireMaster::_processData()
 {
     _preProcess();
 
-    switch (flags()._command) {
-    case CommandEnum_t::REQUEST:
+    switch (flags()._getCommand()) {
+    case CommandType::MASTER_REQUEST:
         if (true) {
             // request has address and length only
             __LDBG_printf("requestFrom addr=%02x len=%u", data()._address, _in.charAt(0));
@@ -246,27 +194,30 @@ void SerialTwoWireMaster::_processData()
             if (flags()._getOutState() != OutStateType::NONE) {
                 // cannot accept request while requestFrom() is waiting
                 _sendNack(data()._getAddress());
+                return;
             }
-            else {
-                beginTransmission(data()._getAddress());
-                // collect data in output buffer
-                _invokeOnRequest();
-                _endTransmission(true);
-            }
+            beginTransmission(data()._getAddress());
+            // collect data in output buffer
+            _invokeOnRequest();
+            _endTransmission(CommandStringType::SLAVE_RESPONSE, true);
         }
         break;
-    case CommandEnum_t::TRANSMIT:
+    case CommandType::SLAVE_RESPONSE:
+    case CommandType::MASTER_TRANSMIT:
         if (flags()._inState) {
             __LDBG_assert_printf(_in.length() == _in.available(), "ilen=%u iavail=%u", _in.length(), _in.available());
             __LDBG_printf("iavail=%u ilen=%u _addr=%02x", _in.available(), _in.length(), data()._address);
             _invokeOnReceive(_in.available());
+            return;
         }
-        else if (flags()._getOutState() == OutStateType::FILLING) {
+        if (flags()._getOutState() == OutStateType::FILLING) {
             __LDBG_assert_printf(_request().length() == _request().available(), "rlen=%u ravail=%u", _request().length(), _request().available());
             // mark as finished
             flags()._setOutState(OutStateType::FILLED);
             __LDBG_printf("addr=%02x ravail=%u outs=%u", _request().peek(), _request().available(), flags()._outState);
         }
+        break;
+    default:
         break;
     }
 }
@@ -281,10 +232,10 @@ void SerialTwoWireMaster::feed(uint8_t byte)
         // tmpstr=String();
         _newLine();
     }
-    else if (flags()._command == CommandEnum_t::DISCARD || flags()._command == CommandEnum_t::SEND_DISCARDED || byte == '\r') {
+    else if (flags()._getCommand() == CommandType::DISCARD || flags()._getCommand() == CommandType::SEND_DISCARDED || byte == '\r') {
         // skip rest of the line cause of invalid data
     }
-    else if (flags()._command == NONE) {
+    else if (flags()._getCommand() == CommandType::NONE) {
         static_assert(kCommandMaxLength < sizeof(_buffer), "invalid size");
         if ((data()._length == 0 && byte != '+') || data()._length >= kCommandMaxLength) {
             _sendAndDiscard();
@@ -293,15 +244,24 @@ void SerialTwoWireMaster::feed(uint8_t byte)
             // append
             _buffer[data()._length++] = byte;
             _buffer[data()._length] = 0;
-            if (strcasecmp_P(reinterpret_cast<const char *>(_buffer), transmitCommand) == 0) {
-                flags()._command = TRANSMIT;
-                data()._length = 0;
-                _newTransmission();
-            }
-            else if (strcasecmp_P(reinterpret_cast<const char *>(_buffer), requestCommand) == 0) {
-                flags()._command = REQUEST;
-                data()._length = 0;
-                _newTransmission();
+            switch(getCommandStringType(_buffer)) {
+                case CommandStringType::MASTER_TANSMIT:
+                    flags()._setCommand(CommandType::MASTER_TRANSMIT);
+                    data()._length = 0;
+                    _newTransmission();
+                    break;
+                case CommandStringType::MASTER_REQUEST:
+                    flags()._setCommand(CommandType::MASTER_REQUEST);
+                    data()._length = 0;
+                    _newTransmission();
+                    break;
+                case CommandStringType::SLAVE_RESPONSE:
+                    flags()._setCommand(CommandType::SLAVE_RESPONSE);
+                    data()._length = 0;
+                    _newTransmission();
+                    break;
+                case CommandStringType::NONE:
+                    break;
             }
         }
     }

@@ -19,19 +19,6 @@ public:
     using SerialTwoWireSlave::begin;
     using Stream::setTimeout;
 
-    enum class EndTransmissionCode : uint8_t {
-        SUCCESS = 0,
-        DATA_TOO_LONG,
-        NACK_ON_ADDRESS,
-        NACK_ON_DATA,
-        OTHER,
-        TIMEOUT,
-        INVALID_ADDRESS,
-        OWN_ADDRESS,
-        END_WITHOUT_BEGIN,
-
-    };
-
 public:
     void begin();
 
@@ -40,10 +27,6 @@ public:
     // yield() is called while waiting and the _onReadSerial() callback, if set
     uint8_t requestFrom(uint8_t address, uint8_t count, uint8_t stop = true);
     inline uint8_t requestFrom(int address, int count, int stop = true);
-
-    void beginTransmission(uint8_t address);
-    void beginTransmission(int address);
-    uint8_t endTransmission(uint8_t stop = true);
 
     size_t available() const;
     size_t isAvailable();
@@ -85,13 +68,15 @@ public:
     virtual void feed(uint8_t data);
 
 protected:
-    uint8_t _endTransmission(uint8_t stop);
     void _newLine();
     void _addBuffer(int data);
     void _processData();
     uint8_t _waitForResponse(uint8_t address, uint8_t count);
 
 protected:
+#if DEBUG_SERIALTWOWIRE_ALL_PUBLIC
+public:
+#endif
     const SerialTwoWireStream &readFrom() const;
     SerialTwoWireStream &readFrom();
     SerialTwoWireStream &_request();

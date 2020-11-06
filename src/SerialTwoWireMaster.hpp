@@ -22,11 +22,6 @@ inline uint8_t SerialTwoWireMaster::requestFrom(int address, int count, int stop
     return requestFrom((uint8_t)address, (uint8_t)count, (uint8_t)stop);
 }
 
-inline void SerialTwoWireMaster::beginTransmission(int address)
-{
-    beginTransmission((uint8_t)address);
-}
-
 inline size_t SerialTwoWireMaster::available() const
 {
     return readFrom().available();

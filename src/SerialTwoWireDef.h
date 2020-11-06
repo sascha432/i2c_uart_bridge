@@ -35,7 +35,7 @@ namespace SerialTwoWireDef {
     #endif
 
     // possible values are 511 or 65535
-    // I2C is limited to 255 bytes + kCommandBufferSize (7 by default)
+    // I2C is limited to 256 bytes incl. the address or 255 bytes data
     #ifndef SERIALTWOWIRE_STREAM_CLASS_MAX_LEN
     #define SERIALTWOWIRE_STREAM_CLASS_MAX_LEN      511
     #endif
@@ -47,19 +47,15 @@ namespace SerialTwoWireDef {
     static constexpr uint8_t kRequestTransmissionMaxLength = 2;
     #endif
 
+    // slave only
+    #define I2C_OVER_UART_MODE_SLAVE                0
+    // master and slave
+    #define I2C_OVER_UART_MODE_MASTER               1
+
     // set to 0 if using I2C slave mode only
     // set to 1 if using master or slave and master
-    #ifndef I2C_OVER_UART_ENABLE_MASTER
-    #define I2C_OVER_UART_ENABLE_MASTER             1
-    #endif
-
-    // must start with +
-    #ifndef I2C_OVER_UART_PREFIX_TRANSMIT
-    #define I2C_OVER_UART_PREFIX_TRANSMIT           "+I2CT="
-    #endif
-
-    #ifndef I2C_OVER_UART_PREFIX_REQUEST
-    #define I2C_OVER_UART_PREFIX_REQUEST            "+I2CR="
+    #ifndef I2C_OVER_UART_MODE
+    #define I2C_OVER_UART_MODE                      I2C_OVER_UART_MODE_MASTER
     #endif
 
     // any command that starts with '+' but does match I2C_OVER_UART_PREFIX_TRANSMIT or
@@ -127,41 +123,6 @@ namespace SerialTwoWireDef {
     #ifndef FPSTR
     #define FPSTR(str) reinterpret_cast<const __FlashStringHelper *>(str)
     #endif
-
-    #if __GCC__
-
-    constexpr size_t __constexpr_strlen(const char *s) noexcept {
-        return __builtin_strlen(s);
-    }
-
-    #else
-
-    constexpr size_t __constexpr_strlen(const char *s) noexcept {
-        return *s ? 1 + __constexpr_strlen(s + 1) : 0;
-    }
-
-    #endif
-
-    extern const char transmitCommand[] PROGMEM;
-
-    static constexpr size_t kTransmitCommandLength = __constexpr_strlen(I2C_OVER_UART_PREFIX_TRANSMIT);
-
-    #if I2C_OVER_UART_ENABLE_MASTER
-
-    extern const char requestCommand[] PROGMEM;
-
-    static constexpr size_t kRequestCommandLength = __constexpr_strlen(I2C_OVER_UART_PREFIX_REQUEST);
-
-    #else
-
-    static constexpr size_t kRequestCommandLength = 0;
-
-    #endif
-
-    #define I2C_OVER_UART_MAX_TRANS_CMD_LEN (kTransmitCommandLength > kRequestCommandLength ? kTransmitCommandLength : kRequestCommandLength)
-
-    static constexpr uint8_t kCommandMaxLength = I2C_OVER_UART_ENABLE_DISCARD_COMMAND > I2C_OVER_UART_MAX_TRANS_CMD_LEN ? I2C_OVER_UART_ENABLE_DISCARD_COMMAND : I2C_OVER_UART_MAX_TRANS_CMD_LEN;
-    static_assert(kCommandMaxLength >= 4, "min. size required");
 
 }
 

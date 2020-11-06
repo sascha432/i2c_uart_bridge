@@ -14,7 +14,7 @@ uint8_t *parse_data(const char *data, size_t hex_length, size_t &length);
 void setup()
 {
     Serial.begin(115200);
-#if I2C_OVER_UART_ENABLE_MASTER
+#if I2C_OVER_UART_MODE == I2C_OVER_UART_MODE_MASTER
     Wire.begin();
 #else
     Wire.begin(0x01);
@@ -55,7 +55,7 @@ void loop()
                     Serial.print(F("+I2CT="));
                     snprintf_P(buf, sizeof(buf) - 1, PSTR("%02x"), *data);
                     Serial.print(buf);
-#if I2C_OVER_UART_ENABLE_MASTER
+#if I2C_OVER_UART_MODE == I2C_OVER_UART_MODE_MASTER
                     if (Wire.requestFrom(*data, request_length) == request_length) {
                         while(Wire.available()) {
                             snprintf_P(buf, sizeof(buf) - 1, PSTR("%02x"), Wire.read());

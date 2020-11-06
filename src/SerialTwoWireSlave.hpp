@@ -124,7 +124,7 @@ inline size_t SerialTwoWireSlave::write(unsigned int n)
 
 inline void SerialTwoWireSlave::_discard()
 {
-    flags()._command = DISCARD;
+    flags()._setCommand(CommandType::DISCARD);
 }
 
 inline size_t SerialTwoWireSlave::_printHex(uint8_t data)
@@ -206,6 +206,24 @@ inline Stream *SerialTwoWireSlave::getSerial() const {
 inline Stream &SerialTwoWireSlave::getSerial() {
     return *_serial;
 }
+
+inline const SerialTwoWireStream &SerialTwoWireSlave::readFrom() const
+{
+    return _in;
+}
+
+inline SerialTwoWireStream &SerialTwoWireSlave::readFrom()
+{
+    return _in;
+}
+
+
+inline void SerialTwoWireSlave::beginTransmission(int address)
+{
+    beginTransmission((uint8_t)address);
+}
+
+
 
 #if DEBUG_SERIALTWOWIRE
 #include <debug_helper_disable.h>

@@ -30,6 +30,8 @@ public:
     static constexpr int kNoDataAvailable = -1;
 
     // parse buffer size
+    // "+I2C?=" ?=[ART]
+    static constexpr uint8_t kCommandMaxLength = 6;
     static constexpr size_t kCommandBufferSize = kCommandMaxLength + 1;
 
     static constexpr uint8_t kMinAddress = 0x00;
@@ -53,64 +55,106 @@ public:
 #endif
 
 protected:
-    typedef enum : uint8_t {
+    enum class CommandStringType : char {
         NONE,
+        MASTER_TANSMIT = 'T',
+        MASTER_REQUEST = 'R',
+        SLAVE_RESPONSE = 'A',
+    };
+
+    enum class CommandType : uint8_t {
+        NONE = 0,
+
         // discard transmission
         DISCARD,
+
         // transmit from slave after requestFrom() -> _request(_out) buffer
         // the data is available for read until a new request or transmission is started
         // the data will be removed from the buffer at this point
         // or
         // transmit from master -> _in buffer
         // data can only be read/written inside the onReceive callback
-        TRANSMIT,
-        // request from master -> _in buffer, followed by a response -> _out
+        MASTER_TRANSMIT,
+
+        // request from master -> _in buffer
         // data can only be read/written inside the onRequest callback
-        REQUEST,
+        MASTER_REQUEST,
+
+        // response from slave -> _out
+        // data can only be read/written inside the onRequest callback
+        SLAVE_RESPONSE,
+
         // if I2C_OVER_UART_ENABLE_DISCARD_COMMAND is enabled, commands that do not
-        // match are sent to onReceive
+        // match are sent to onReceive as plain text
         SEND_DISCARDED,
-    } CommandEnum_t;
+    };
 
     enum class OutStateType : uint8_t {
-        NONE,
+        NONE = 0,
         LOCKED,
         FILL,
         FILLING,
         FILLED,
     };
 
+    enum class EndTransmissionCode : uint8_t {
+        SUCCESS = 0,
+        DATA_TOO_LONG,
+        NACK_ON_ADDRESS,
+        NACK_ON_DATA,
+        OTHER,
+        TIMEOUT,
+        INVALID_ADDRESS,
+        OWN_ADDRESS,
+        END_WITHOUT_BEGIN,
+    };
 
-    typedef struct Data_t {
-        union {
-            struct {
-                uint16_t _address : 8;                      // own address
-                uint16_t _length : 8;                       // _buffer.length
-            };
-        };
+    struct __attribute__((packed)) Data_t {
+        uint8_t _address;                                   // own address
+        uint8_t _length;                                    // _buffer.length
 #if I2C_OVER_UART_ADD_CRC16
         uint16_t _crc;
 #endif
-        union {
-            struct {
-                uint16_t _command : 4;
-                uint16_t _readFromOut : 1;                  // read from _out or _in
-                uint16_t _crcMarker : 1;                    // crc marker received
-                uint16_t _outState : 3;                     // _out buffer state
-                uint16_t _inState : 1;                      // _in buffer state
-            };
-        };
+        CommandType _command;
+        OutStateType _outState;                     // _out buffer state
+        bool _readFromOut;                          // read from _out or _in
+        bool _crcMarker;                            // crc marker received
+        bool _inState;                              // _in buffer state
+
+        String _getCommandAsString() const {
+            switch(_command) {
+                case CommandType::NONE:
+                    return F("NONE");
+                case CommandType::DISCARD:
+                    return F("DISCARD");
+                case CommandType::MASTER_REQUEST :
+                    return F("MASTER_REQUEST");
+                case CommandType::MASTER_TRANSMIT:
+                    return F("MASTER_TRANSMIT");
+                case CommandType::SLAVE_RESPONSE:
+                    return F("SLAVE_RESPONSE");
+                case CommandType::SEND_DISCARDED:
+                    return F("SEND_DISCARDED");
+            }
+            return F("INVALID");
+        }
+        CommandType _getCommand() const {
+            return _command;
+        }
+        void _setCommand(CommandType type) {
+            _command = type;
+        }
 
         uint8_t _getAddress() const {
             return _address;
         }
 
         OutStateType _getOutState() const {
-            return static_cast<OutStateType>(_outState);
+            return _outState;
         }
 
         void _setOutState(OutStateType state) {
-            _outState = static_cast<uint16_t>(state);
+            _outState = state;
         }
 
         bool _outCanWrite() const {
@@ -127,15 +171,15 @@ protected:
 #if I2C_OVER_UART_ADD_CRC16
             _crc(~0),
 #endif
-            _command(0),
+            _command(CommandType::NONE),
+            _outState(OutStateType::NONE),
             _readFromOut(true),
             _crcMarker(0),
-            _outState(0),
             _inState(false)
         {
         }
 
-    } Data_t;
+    };
 
 public:
     SerialTwoWireSlave();
@@ -265,6 +309,15 @@ protected:
     void _invokeOnRequest();
     void _invokeOnReadSerial();
 
+    static size_t sendCommandStr(Stream &stream, CommandStringType type);
+    static const char *getCommandStr(CommandStringType type);
+    static CommandStringType getCommandStringType(const char *str);
+
+    inline static CommandStringType getCommandStringType(const uint8_t *str) {
+        return getCommandStringType(reinterpret_cast<const char *>(str));
+    }
+
+
 protected:
     Data_t _data;
     uint8_t _buffer[kCommandBufferSize];
@@ -277,6 +330,20 @@ protected:
     onReadSerialCallback _onReadSerial;
 
     Stream *_serial;
+
+public:
+    void beginTransmission(uint8_t address);
+    void beginTransmission(int address);
+    uint8_t endTransmission(uint8_t stop = true);
+
+protected:
+    uint8_t _endTransmission(CommandStringType type, uint8_t stop);
+
+#if DEBUG_SERIALTWOWIRE_ALL_PUBLIC
+public:
+#endif
+    const SerialTwoWireStream &readFrom() const;
+    SerialTwoWireStream &readFrom();
 };
 
 #include "SerialTwoWireSlave.hpp"

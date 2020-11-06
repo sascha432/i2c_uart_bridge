@@ -10,7 +10,7 @@
 #include "SerialTwoWireDef.h"
 #include "SerialTwoWireSlave.h"
 
-#if I2C_OVER_UART_ENABLE_MASTER
+#if I2C_OVER_UART_MODE == I2C_OVER_UART_MODE_MASTER
 #include "SerialTwoWireMaster.h"
 using SerialTwoWire = SerialTwoWireMaster;
 #else
@@ -35,7 +35,6 @@ static inline void optimistic_yield(uint32_t) {
 }
 
 #elif _MSC_VER
-
 
 #include <thread>
 

@@ -95,6 +95,9 @@ public:
     bool reserve(size_type new_size);
 
 private:
+#if DEBUG_SERIALTWOWIRE_ALL_PUBLIC
+public:
+#endif
     bool resize(size_type size);
     size_type _resize(size_type size);
     size_type _get_block_size(size_type new_size) const;
