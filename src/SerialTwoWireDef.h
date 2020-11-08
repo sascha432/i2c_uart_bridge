@@ -47,38 +47,16 @@ namespace SerialTwoWireDef {
     static constexpr uint8_t kRequestTransmissionMaxLength = 2;
     #endif
 
-    // slave only
-    #define I2C_OVER_UART_MODE_SLAVE                0
-    // master and slave
-    #define I2C_OVER_UART_MODE_MASTER               1
-
     // set to 0 if using I2C slave mode only
     // set to 1 if using master or slave and master
-    #ifndef I2C_OVER_UART_MODE
-    #define I2C_OVER_UART_MODE                      I2C_OVER_UART_MODE_MASTER
-    #endif
-
-    // any command that starts with '+' but does match I2C_OVER_UART_PREFIX_TRANSMIT or
-    // I2C_OVER_UART_PREFIX_REQUEST will be forwarded to the onReceived callback.
-    // set to 0 to disable. any other number will limit the data that is collected
-    #ifndef I2C_OVER_UART_ENABLE_DISCARD_COMMAND
-    #define I2C_OVER_UART_ENABLE_DISCARD_COMMAND    0
-    //#define I2C_OVER_UART_ENABLE_DISCARD_COMMAND    19 // collect up to 19 byte
-    #endif
-
-    // first byte to identify discarded transmissions (onReceive callback)
-    // if '+' is used, it won't added since the command starts with '+' already
-    #ifndef I2C_OVER_UART_ENABLE_DISCARD_ID
-    #define I2C_OVER_UART_ENABLE_DISCARD_ID         43 // '+'
-    //#define I2C_OVER_UART_ENABLE_DISCARD_ID         0xff
+    #ifndef I2C_OVER_UART_ENABLE_MASTER
+    #define I2C_OVER_UART_ENABLE_MASTER             1
     #endif
 
     // maximum binary input length before discarding incoming messages
     #ifndef I2C_OVER_UART_MAX_INPUT_LENGTH
     #define I2C_OVER_UART_MAX_INPUT_LENGTH          255
     #endif
-
-    static_assert(I2C_OVER_UART_ENABLE_DISCARD_COMMAND < I2C_OVER_UART_MAX_INPUT_LENGTH - 1, "maximum length exceeded");
 
     static constexpr size_t kTransmissionMaxLength = I2C_OVER_UART_MAX_INPUT_LENGTH;
     static_assert(kTransmissionMaxLength <= 255, "maximum length exceeded");

@@ -31,6 +31,7 @@ public:
 
     // parse buffer size
     // "+I2C?=" ?=[ART]
+    static constexpr uint8_t kRequestCommandLength = 6;
     static constexpr uint8_t kCommandMaxLength = 6;
     static constexpr size_t kCommandBufferSize = kCommandMaxLength + 1;
 
@@ -83,10 +84,6 @@ protected:
         // response from slave -> _out
         // data can only be read/written inside the onRequest callback
         SLAVE_RESPONSE,
-
-        // if I2C_OVER_UART_ENABLE_DISCARD_COMMAND is enabled, commands that do not
-        // match are sent to onReceive as plain text
-        SEND_DISCARDED,
     };
 
     enum class OutStateType : uint8_t {
@@ -133,8 +130,6 @@ protected:
                     return F("MASTER_TRANSMIT");
                 case CommandType::SLAVE_RESPONSE:
                     return F("SLAVE_RESPONSE");
-                case CommandType::SEND_DISCARDED:
-                    return F("SEND_DISCARDED");
             }
             return F("INVALID");
         }

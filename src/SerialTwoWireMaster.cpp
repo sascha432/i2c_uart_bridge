@@ -108,8 +108,8 @@ void SerialTwoWireMaster::_newLine()
     // add any data that's left in the buffer
     _addBuffer(_parseData(true));
 
-    __LDBG_printf("cmd=%u len=%u ilen=%u rlen=%u discard=%u outs=%u ins=%u",
-        flags()._command, data()._length, _in.length(),
+    __LDBG_printf("cmd=%s len=%u ilen=%u rlen=%u discard=%u outs=%u ins=%u",
+        flags()._getCommandAsString().c_str(), data()._length, _in.length(),
         (flags()._getOutState() == OutStateType::FILLING ? _request().length() : 0),
         (flags()._getCommand() <= CommandType::DISCARD || (_in.length() == 0 && flags()._outIsFilling() == false)),
         flags()._outState,
@@ -232,13 +232,14 @@ void SerialTwoWireMaster::feed(uint8_t byte)
         // tmpstr=String();
         _newLine();
     }
-    else if (flags()._getCommand() == CommandType::DISCARD || flags()._getCommand() == CommandType::SEND_DISCARDED || byte == '\r') {
+    else if (flags()._getCommand() == CommandType::DISCARD || byte == '\r') {
         // skip rest of the line cause of invalid data
     }
     else if (flags()._getCommand() == CommandType::NONE) {
         static_assert(kCommandMaxLength < sizeof(_buffer), "invalid size");
         if ((data()._length == 0 && byte != '+') || data()._length >= kCommandMaxLength) {
-            _sendAndDiscard();
+            data()._length = 0;
+            _discard();
         }
         else {
             // append

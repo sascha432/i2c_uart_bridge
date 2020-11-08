@@ -10,7 +10,7 @@
 #include "SerialTwoWireDef.h"
 #include "SerialTwoWireSlave.h"
 
-#if I2C_OVER_UART_MODE == I2C_OVER_UART_MODE_MASTER
+#if I2C_OVER_UART_ENABLE_MASTER
 #include "SerialTwoWireMaster.h"
 using SerialTwoWire = SerialTwoWireMaster;
 #else
