@@ -34,12 +34,6 @@ namespace SerialTwoWireDef {
     #error check if stl support is available
     #endif
 
-    // possible values are 511 or 65535
-    // I2C is limited to 256 bytes incl. the address or 255 bytes data
-    #ifndef SERIALTWOWIRE_STREAM_CLASS_MAX_LEN
-    #define SERIALTWOWIRE_STREAM_CLASS_MAX_LEN      511
-    #endif
-
     #if I2C_OVER_UART_ADD_CRC16
     static constexpr uint8_t kRequestTransmissionMaxLength = 2 + sizeof(uint16_t);
     static constexpr uint8_t kCrcStartChar = '#';
@@ -97,11 +91,6 @@ namespace SerialTwoWireDef {
     #define I2C_OVER_UART_ALLOC_BLOCK_SIZE          16
     #endif
     #endif
-
-    #ifndef FPSTR
-    #define FPSTR(str) reinterpret_cast<const __FlashStringHelper *>(str)
-    #endif
-
 }
 
 #if DEBUG_SERIALTWOWIRE

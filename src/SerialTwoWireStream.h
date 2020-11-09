@@ -24,15 +24,15 @@ using namespace SerialTwoWireDef;
 // Compared to StreamString:
 // smaller, faster, better dynamic memory management and requires much less memory
 //
-// static constexpr size_t SerialTwoWireStreamSize = sizeof(SerialTwoWireStream);          //  8 byte
+// static constexpr size_t SerialTwoWireStreamSize = sizeof(SerialTwoWireStream);          // 10 byte (ATmega328P, gcc 5.4.0)
 // static constexpr size_t BufferStreamSize = sizeof(BufferStream);                        // 44 byte
 // static constexpr size_t StreamStringSize = sizeof(StreamString);                        // 52 byte
 
 constexpr bool __constexpr_is_bitmask(size_t num, uint16_t bits = 15) {
-    return num == 0U || bits == 0U ? false : ((num == (1U << bits) ? true : __constexpr_is_bitmask(num, bits - 1)));
+    return num == 0U || bits == 0U ? false : ((num == (1UL << bits) ? true : __constexpr_is_bitmask(num, bits - 1)));
 }
 
-class SerialTwoWireStream {
+class __attribute__((__packed__)) SerialTwoWireStream {
 public:
     using size_type = uint16_t;
 
@@ -40,13 +40,8 @@ public:
     static constexpr size_type kAllocBlockSize = I2C_OVER_UART_ALLOC_BLOCK_SIZE;
     static constexpr size_type kAllocBlockBitMask = __constexpr_is_bitmask(kAllocBlockSize) ? (kAllocBlockSize - 1) : 0;
 
-#if SERIALTWOWIRE_STREAM_CLASS_MAX_LEN < 512
-    static constexpr size_type kBitsSize = 9;
-    static constexpr size_type kBitsMinAlloc = 5;
-#else
     static constexpr size_type kBitsSize = sizeof(size_type) * 8;
     static constexpr size_type kBitsMinAlloc = kBitsSize;
-#endif
 
     SerialTwoWireStream(const SerialTwoWireStream &) = delete;
     SerialTwoWireStream &operator=(const SerialTwoWireStream &) = delete;
@@ -77,7 +72,7 @@ public:
     size_type size() const;
     size_t available() const;
     static constexpr size_t max_length() {
-        return (1 << kBitsSize) - 1;
+        return (1UL << kBitsSize) - 1;
     }
     bool empty() const;
 
@@ -104,22 +99,13 @@ public:
     size_type _get_alloc_min_size() const;
 
     uint8_t *_buffer;
-#if SERIALTWOWIRE_STREAM_CLASS_MAX_LEN < 512
-    uint32_t _length: kBitsSize;
-    uint32_t _position : kBitsSize;
-    uint32_t _size: kBitsSize;
-    uint32_t _allocMinSize: kBitsMinAlloc;
-#else
     size_type _length;
     size_type _position;
     size_type _size;
     size_type _allocMinSize;
-#endif
 };
 
 #include "SerialTwoWireStream.hpp"
-
-static constexpr size_t SerialTwoWireStreamSize = sizeof(SerialTwoWireStream);
 
 #if DEBUG_SERIALTWOWIRE
 #include <debug_helper_disable.h>

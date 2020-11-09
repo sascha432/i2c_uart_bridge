@@ -47,20 +47,11 @@ inline SerialTwoWireStream::~SerialTwoWireStream()
 
 inline void SerialTwoWireStream::setAllocMinSize(uint8_t size)
 {
-#if SERIALTWOWIRE_STREAM_CLASS_MAX_LEN < 512
-	// 0 - 16, 32, 48, 64 ... 256
-	_allocMinSize = size > 15 ? (16 + ((size + 15) / 16)) : size;
-#else
 	_allocMinSize = size;
-#endif
 }
 
 inline SerialTwoWireStream::size_type SerialTwoWireStream::_get_alloc_min_size() const {
-#if SERIALTWOWIRE_STREAM_CLASS_MAX_LEN < 512
-    return _allocMinSize > 15 ? (_allocMinSize * 16) - 256 : _allocMinSize;
-#else
     return _allocMinSize;
-#endif
 }
 
 inline int SerialTwoWireStream::read()
