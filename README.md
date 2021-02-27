@@ -61,27 +61,27 @@ Allowed charaters are 0-9, a-f, A-F, comma, tab and space.
 The end of a transmission is makred by a line feed. carriage return is optional.
 The maximum transmission length is 254 byte, including the I2C address.
 
-### Sending data
+### Transmitting data to slaves
 
 +I2CT=\<address\>,\<data\>[,\<data\>[,...]]\<LF\>
 
-Master and slave are transmitting data to the serial port.
+A Master is transmitting data for the slave with \<address\> to the serial port.
 
-#### Requesting data
+#### Requesting data from slaves
 
 +I2CR=\<address\>,\<length\>\<LF\>
 
-The master sends requests to the serial port.
+A master is requesting \<length\> bytes from the slave \<address\>.
 
-#### Receiving from slaves
+#### Receiving responses from slaves
 
 +I2CA=\<address\>\<data\>[\<data\>[...]]\<LF\>
 
-Master and slave are reading transmissions from the serial port.
+The slave with \<address\> is sending a response to the serial port.
 
 #### Additional output
 
-Master and slave might send additional information using the REM comand
+Master and slave might send additional information using the REM command
 
 +REM=...
 
@@ -89,10 +89,18 @@ Master and slave might send additional information using the REM comand
 
 ### Locking and acknowledgement
 
-Locking and acknowledgement is currently not implemented. The serial communication is based in 2 wires, without any other signal like DTS, RTS etc... which would required additonal serial communication and cause a lot overhead and delays. This might lead to collisions in master/master mode if both masters are sending data at the same time. The data becomes invalid and both transmissions are discarded.
+Locking and acknowledgement is currently not implemented. The serial communication is based on 2 wires, without any other signal like RTS, CTS, DTR... This might lead to collisions in master/master mode if both masters are sending data at the same time. The data becomes invalid and both transmissions are discarded.
 
 ### Collisions
 
-A master can request data and receive transmissions at the same time without collissions. If a slave responds after the master aborted the request cause of a timeout and requesting data from another slave, this might lead to a collison and both transmissions would be discarded. These problems only occur with low serial bandwith and high concurrency.
+A master can request data and receive transmissions at the same time without collissions. If a slave responds after the master aborted the request cause of a timeout and requesting data from another slave, this might lead to a collison and both transmissions would be discarded. These problems only occur with low serial bandwidth and high concurrency.
 
-I suggest to implement random timeouts, delays and retries on the master side, which should sufficiently mitigate the issue.
+My suggestion is to implement random timeouts, delays and retries on the master side, which should sufficiently mitigate the issue. An optional checksum can ensure data integrity.
+
+### Sharing the serial port with multiple devices
+
+The signal between devices should be TTL level with a single converter to RS232, if required. To avoid shorts and high currents, different TX pins should not be connected directly together but with a 1-10KOhm resistor. Idle master and slaves should set the TX pin to a high impedance state or using the internal pullup resistor (i.e. ATmega328p 20-50kOhm).
+
+Another option for devices that cannot set TX to a high impedance state, is to use several input pins for TX and trigger an interrupt on level change. As long as one of the input pins is low, the TX pin will be set to low as well. A resistor in series to protect the input pins is recommended.
+
+If a lot other data is transferred over the port serial port (like debug messages) it is recommended to enable the checksum to avoid corrupted data.

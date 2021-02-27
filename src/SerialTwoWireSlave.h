@@ -60,7 +60,11 @@ protected:
         NONE,
         MASTER_TANSMIT = 'T',
         MASTER_REQUEST = 'R',
+#if I2C_OVER_UART_SLAVE_RESPONSE_MASTER_TRANSMIT
+        SLAVE_RESPONSE = 'T',
+#else
         SLAVE_RESPONSE = 'A',
+#endif
     };
 
     enum class CommandType : uint8_t {

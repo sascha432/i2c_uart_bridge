@@ -34,6 +34,11 @@ namespace SerialTwoWireDef {
     #error check if stl support is available
     #endif
 
+    // use same command for master transmit and slave response
+    #ifndef I2C_OVER_UART_SLAVE_RESPONSE_MASTER_TRANSMIT
+    #define I2C_OVER_UART_SLAVE_RESPONSE_MASTER_TRANSMIT 0
+    #endif
+
     #if I2C_OVER_UART_ADD_CRC16
     static constexpr uint8_t kRequestTransmissionMaxLength = 2 + sizeof(uint16_t);
     static constexpr uint8_t kCrcStartChar = '#';

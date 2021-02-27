@@ -312,7 +312,9 @@ const char *SerialTwoWireSlave::getCommandStr(CommandStringType type)
     switch(type) {
         case CommandStringType::MASTER_REQUEST:
         case CommandStringType::SLAVE_RESPONSE:
+#if !I2C_OVER_UART_SLAVE_RESPONSE_MASTER_TRANSMIT
         case CommandStringType::MASTER_TANSMIT:
+#endif
             snprintf_P(buf, sizeof(buf), PSTR("+I2C%c="), type);
             return buf;
         default:

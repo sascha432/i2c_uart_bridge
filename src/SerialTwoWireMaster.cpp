@@ -51,6 +51,7 @@ uint8_t SerialTwoWireMaster::requestFrom(uint8_t address, uint8_t count, uint8_t
 #endif
     _serial->flush();
 
+
     // wait for response
 #if DEBUG_SERIALTWOWIRE
     auto start = micros();
@@ -60,6 +61,18 @@ uint8_t SerialTwoWireMaster::requestFrom(uint8_t address, uint8_t count, uint8_t
     return result;
 #else
     return _waitForResponse(address, count);
+    // if (result) {
+    //     Serial.printf("out(%u):", _out.available());
+    //     for(char ch: _out) {
+    //         if (isprint(ch)) {
+    //             Serial.print(ch);
+    //         }
+    //         else {
+    //             Serial.printf("\\%02x", (unsigned)ch);
+    //         }
+    //     }
+    //     Serial.println();
+    // }
 #endif
 }
 
@@ -247,7 +260,11 @@ void SerialTwoWireMaster::feed(uint8_t byte)
             _buffer[data()._length] = 0;
             switch(getCommandStringType(_buffer)) {
                 case CommandStringType::MASTER_TANSMIT:
+#if I2C_OVER_UART_SLAVE_RESPONSE_MASTER_TRANSMIT
+                    flags()._setCommand(flags()._outIsFilling() ? CommandType::SLAVE_RESPONSE : CommandType::MASTER_TRANSMIT);
+#else
                     flags()._setCommand(CommandType::MASTER_TRANSMIT);
+#endif
                     data()._length = 0;
                     _newTransmission();
                     break;
@@ -256,11 +273,13 @@ void SerialTwoWireMaster::feed(uint8_t byte)
                     data()._length = 0;
                     _newTransmission();
                     break;
+#if !I2C_OVER_UART_SLAVE_RESPONSE_MASTER_TRANSMIT
                 case CommandStringType::SLAVE_RESPONSE:
                     flags()._setCommand(CommandType::SLAVE_RESPONSE);
                     data()._length = 0;
                     _newTransmission();
                     break;
+#endif
                 case CommandStringType::NONE:
                     break;
             }
