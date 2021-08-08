@@ -96,6 +96,12 @@ namespace SerialTwoWireDef {
     #define I2C_OVER_UART_ALLOC_BLOCK_SIZE          16
     #endif
     #endif
+
+    #if ESP8266
+    using stream_read_return_t = int;
+    #else
+    using stream_read_return_t = size_t;
+    #endif
 }
 
 #if DEBUG_SERIALTWOWIRE

@@ -42,7 +42,7 @@ inline int SerialTwoWireMaster::peekByte()
     return readFrom().peek();
 }
 
-inline size_t SerialTwoWireMaster::read(uint8_t *data, size_t length)
+inline stream_read_return_t SerialTwoWireMaster::read(uint8_t *data, size_t length)
 {
     return readFrom().readBytes(reinterpret_cast<uint8_t *>(data), length);
 }

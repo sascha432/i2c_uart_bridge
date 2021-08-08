@@ -60,7 +60,7 @@ inline int SerialTwoWireSlave::peekByte()
     return _in.peek();
 }
 
-inline size_t SerialTwoWireSlave::read(uint8_t *data, size_t length)
+inline stream_read_return_t SerialTwoWireSlave::read(uint8_t *data, size_t length)
 {
     return _in.readBytes(data, length);
 }

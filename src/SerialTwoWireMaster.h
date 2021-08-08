@@ -32,7 +32,7 @@ public:
     size_t isAvailable();
     int readByte();
     int peekByte();
-    size_t read(uint8_t *data, size_t length);
+    stream_read_return_t read(uint8_t *data, size_t length);
     size_t read(char *data, size_t length);
 
     template<class T>
