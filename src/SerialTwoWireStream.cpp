@@ -105,11 +105,11 @@ SerialTwoWireStream::size_type SerialTwoWireStream::_resize(size_type new_size)
 	if (new_size != 0) {
 		if (_buffer) {
 			_buffer = (uint8_t *)realloc(_buffer, new_size);
-			__LDBG_assert_printf(!!_buffer, "size=%u old_size=%u", new_size, _size);
+			__LDBG_assertf(!!_buffer, "size=%u old_size=%u", new_size, _size);
 		}
 		else {
 			_buffer = (uint8_t *)malloc(new_size);
-			__LDBG_assert_printf(!!_buffer, "size=%u", new_size);
+			__LDBG_assertf(!!_buffer, "size=%u", new_size);
 		}
 		if (_buffer) {
 			return new_size;

@@ -7,8 +7,8 @@
 #include "SerialTwoWireDebug.h"
 
 #if DEBUG_SERIALTWOWIRE
-#include <debug_helper.h>
-#include <debug_helper_enable.h>
+#    include <debug_helper.h>
+#    include <debug_helper_enable.h>
 #endif
 
 #pragma push_macro("new")
@@ -38,13 +38,13 @@ uint8_t SerialTwoWireMaster::requestFrom(uint8_t address, uint8_t count, uint8_t
     written += _printHex(count);
 #if I2C_OVER_UART_ADD_CRC16
     written += _printHexCrc(crc);
-    __LDBG_assert_printf(written == kRequestCommandLength + 10, "written=%u expected=%u", written,kRequestCommandLength + 10);
+    __LDBG_assertf(written == kRequestCommandLength + 10, "written=%u expected=%u", written,kRequestCommandLength + 10);
     if (written != kRequestCommandLength + 10) {
         return 0;
     }
 #else
     written += _println();
-    __LDBG_assert_printf(written == kRequestCommandLength + 5, "written=%u expected=%u", written, kRequestCommandLength + 5);
+    __LDBG_assertf(written == kRequestCommandLength + 5, "written=%u expected=%u", written, kRequestCommandLength + 5);
     if (written != kCommandMaxLength + 5) {
         return 0;
     }
@@ -166,7 +166,7 @@ void SerialTwoWireMaster::_addBuffer(int byte)
         }
     }
     else {
-        __LDBG_assert_printf(_in.length() == 0, "len=%u data=%d cmd=%s", data()._length, byte, data()._getCommandAsString().c_str());
+        __LDBG_assertf(_in.length() == 0, "len=%u data=%d cmd=%s", data()._length, byte, data()._getCommandAsString().c_str());
         if (byte == data()._address) {
             if (data()._getCommand() == CommandType::SLAVE_RESPONSE) {
                 // discard response from own address
@@ -218,13 +218,13 @@ void SerialTwoWireMaster::_processData()
     case CommandType::SLAVE_RESPONSE:
     case CommandType::MASTER_TRANSMIT:
         if (flags()._inState) {
-            __LDBG_assert_printf(_in.length() == _in.available(), "ilen=%u iavail=%u", _in.length(), _in.available());
+            __LDBG_assertf(_in.length() == _in.available(), "ilen=%u iavail=%u", _in.length(), _in.available());
             __LDBG_printf("iavail=%u ilen=%u _addr=%02x", _in.available(), _in.length(), data()._address);
             _invokeOnReceive(_in.available());
             return;
         }
         if (flags()._getOutState() == OutStateType::FILLING) {
-            __LDBG_assert_printf(_request().length() == _request().available(), "rlen=%u ravail=%u", _request().length(), _request().available());
+            __LDBG_assertf(_request().length() == _request().available(), "rlen=%u ravail=%u", _request().length(), _request().available());
             // mark as finished
             flags()._setOutState(OutStateType::FILLED);
             __LDBG_printf("addr=%02x ravail=%u outs=%u", _request().peek(), _request().available(), flags()._outState);
@@ -291,7 +291,7 @@ void SerialTwoWireMaster::feed(uint8_t byte)
     }
 #endif
     else if (isxdigit(byte)) {
-        __LDBG_assert_printf(data()._length < sizeof(_buffer) - 1, "buf=%-*.*s", (sizeof(_buffer) - 1), (sizeof(_buffer) - 1), _buffer);
+        __LDBG_assertf(data()._length < sizeof(_buffer) - 1, "buf=%-*.*s", (sizeof(_buffer) - 1), (sizeof(_buffer) - 1), _buffer);
         // add data to command buffer
         _buffer[data()._length++] = byte;
         _addBuffer(_parseData());

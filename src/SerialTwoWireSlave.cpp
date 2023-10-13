@@ -23,8 +23,8 @@ SerialTwoWireSlave::SerialTwoWireSlave(Stream &serial, onReadSerialCallback call
 
 void SerialTwoWireSlave::begin(uint8_t address)
 {
-    __LDBG_assert_printf(isValidAddress(address), "address=%u min=%u max=%u", address, kMinAddress, kMaxAddress);
-    __LDBG_assert_printf(data()._address == kNotInitializedAddress, "begin called again without end");
+    __LDBG_assertf(isValidAddress(address), "address=%u min=%u max=%u", address, kMinAddress, kMaxAddress);
+    __LDBG_assertf(data()._address == kNotInitializedAddress, "begin called again without end");
     _end();
     data()._address = address;
     _in.reserve(SerialTwoWireStream::kAllocMinSize);
@@ -45,7 +45,7 @@ void SerialTwoWireSlave::_end()
 
 size_t SerialTwoWireSlave::write(uint8_t data)
 {
-    __LDBG_assert_printf(flags()._outCanWrite(), "outs=%u", flags()._outState);
+    __LDBG_assertf(flags()._outCanWrite(), "outs=%u", flags()._outState);
     if (!flags()._outCanWrite()) {
         __LDBG_printf("outs=%u", flags()._outState);
         return 0;
@@ -55,7 +55,7 @@ size_t SerialTwoWireSlave::write(uint8_t data)
 
 size_t SerialTwoWireSlave::write(const uint8_t *data, size_t length)
 {
-    __LDBG_assert_printf(flags()._outCanWrite(), "outs=%u", flags()._outState);
+    __LDBG_assertf(flags()._outCanWrite(), "outs=%u", flags()._outState);
     if (!flags()._outCanWrite()) {
         __LDBG_printf("outs=%u", flags()._outState);
         return 0;
@@ -137,12 +137,12 @@ void SerialTwoWireSlave::feed(uint8_t byte)
             _discard();
         }
         else {
-            __LDBG_assert_printf(data()._length < sizeof(_buffer) - 1, "buf=%-*.*s", (sizeof(_buffer) - 1), (sizeof(_buffer) - 1), _buffer);
+            __LDBG_assertf(data()._length < sizeof(_buffer) - 1, "buf=%-*.*s", (sizeof(_buffer) - 1), (sizeof(_buffer) - 1), _buffer);
             // append
             _buffer[data()._length++] = byte;
             _buffer[data()._length] = 0;
             switch(getCommandStringType(_buffer)) {
-                case CommandStringType::MASTER_TANSMIT:
+                case CommandStringType::MASTER_TRANSMIT:
                     flags()._setCommand(CommandType::MASTER_TRANSMIT);
                     data()._length = 0;
                     _newTransmission();
@@ -163,7 +163,7 @@ void SerialTwoWireSlave::feed(uint8_t byte)
     }
 #endif
     else if (isxdigit(byte)) {
-        __LDBG_assert_printf(data()._length < sizeof(_buffer) - 1, "buf=%-*.*s", (sizeof(_buffer) - 1), (sizeof(_buffer) - 1), _buffer);
+        __LDBG_assertf(data()._length < sizeof(_buffer) - 1, "buf=%-*.*s", (sizeof(_buffer) - 1), (sizeof(_buffer) - 1), _buffer);
         // add data to command buffer
         _buffer[data()._length++] = byte;
         _addBuffer(_parseData());
@@ -207,7 +207,7 @@ int SerialTwoWireSlave::_parseData(bool lastByte)
     }
 #else
     else if (data()._length > 2) {
-        __LDBG_assert_printf(data()._length <= 2, "cmd=%s len=%u last_byte=%u buf=%-*.*s", flags()._getCommandAsString().c_str(), data()._length, lastByte, (sizeof(_buffer) - 1), (sizeof(_buffer) - 1), _buffer);
+        __LDBG_assertf(data()._length <= 2, "cmd=%s len=%u last_byte=%u buf=%-*.*s", flags()._getCommandAsString().c_str(), data()._length, lastByte, (sizeof(_buffer) - 1), (sizeof(_buffer) - 1), _buffer);
         __LDBG_printf("discard len=%u", data()._length);
         _discard();
         return kNoDataAvailable;
@@ -221,7 +221,7 @@ int SerialTwoWireSlave::_parseData(bool lastByte)
     else if (data()._length < 2) {
         return kNoDataAvailable;
     }
-    __LDBG_assert_printf(data()._length <= 2, "cmd=%s len=%u last_byte=%u buf=%-*.*s", flags()._getCommandAsString().c_str(), data()._length, lastByte, (sizeof(_buffer) - 1), (sizeof(_buffer) - 1), _buffer);
+    __LDBG_assertf(data()._length <= 2, "cmd=%s len=%u last_byte=%u buf=%-*.*s", flags()._getCommandAsString().c_str(), data()._length, lastByte, (sizeof(_buffer) - 1), (sizeof(_buffer) - 1), _buffer);
     _buffer[2] = 0;
 #if I2C_OVER_UART_ADD_CRC16
     auto data = (uint8_t)strtoul(reinterpret_cast<const char *>(_buffer), nullptr, 16);
@@ -248,7 +248,7 @@ void SerialTwoWireSlave::_addBuffer(int byte)
         }
     }
     else {
-        __LDBG_assert_printf(_in.length() == 0, "len=%u data=%d", data()._length, byte);
+        __LDBG_assertf(_in.length() == 0, "len=%u data=%d", data()._length, byte);
         if (byte == data()._address) {
             // mark as being in use
             flags()._inState = true;
@@ -294,7 +294,7 @@ void SerialTwoWireSlave::_processData()
         break;
     case CommandType::MASTER_TRANSMIT:
         if (flags()._inState) {
-            __LDBG_assert_printf(_in.length() == _in.available(), "ilen=%u iavail=%u", _in.length(), _in.available());
+            __LDBG_assertf(_in.length() == _in.available(), "ilen=%u iavail=%u", _in.length(), _in.available());
             __LDBG_printf("iavail=%u ilen=%u _addr=%02x", _in.available(), _in.length(), data()._address);
             flags()._readFromOut = false;
             _onReceive(_in.available());
@@ -313,7 +313,7 @@ const char *SerialTwoWireSlave::getCommandStr(CommandStringType type)
         case CommandStringType::MASTER_REQUEST:
         case CommandStringType::SLAVE_RESPONSE:
 #if !I2C_OVER_UART_SLAVE_RESPONSE_MASTER_TRANSMIT
-        case CommandStringType::MASTER_TANSMIT:
+        case CommandStringType::MASTER_TRANSMIT:
 #endif
             snprintf_P(buf, sizeof(buf), PSTR("+I2C%c="), type);
             return buf;
@@ -340,8 +340,8 @@ SerialTwoWireSlave::CommandStringType SerialTwoWireSlave::getCommandStringType(c
         if (strcasecmp(str, getCommandStr(CommandStringType::SLAVE_RESPONSE)) == 0) {
             return CommandStringType::SLAVE_RESPONSE;
         }
-        if (strcasecmp(str, getCommandStr(CommandStringType::MASTER_TANSMIT)) == 0) {
-            return CommandStringType::MASTER_TANSMIT;
+        if (strcasecmp(str, getCommandStr(CommandStringType::MASTER_TRANSMIT)) == 0) {
+            return CommandStringType::MASTER_TRANSMIT;
         }
     }
     return CommandStringType::NONE;
@@ -359,7 +359,7 @@ uint8_t SerialTwoWireSlave::endTransmission(uint8_t stop)
 {
     EndTransmissionCode code = EndTransmissionCode::SUCCESS;
     int address = _out.peek();
-    __LDBG_assert_printf(flags()._getOutState() == OutStateType::LOCKED && _out.available() && address != data()._address && isValidAddress(address), "oavail=%u olen=%u slave=%d master=%d outs=%u ins=%u", _out.available(), _out.length(), address, data()._address, flags()._outState, flags()._inState);
+    __LDBG_assertf(flags()._getOutState() == OutStateType::LOCKED && _out.available() && address != data()._address && isValidAddress(address), "oavail=%u olen=%u slave=%d master=%d outs=%u ins=%u", _out.available(), _out.length(), address, data()._address, flags()._outState, flags()._inState);
     if (flags()._getOutState() != OutStateType::LOCKED) {
         code = EndTransmissionCode::END_WITHOUT_BEGIN;
     }
@@ -371,7 +371,7 @@ uint8_t SerialTwoWireSlave::endTransmission(uint8_t stop)
         code = EndTransmissionCode::OWN_ADDRESS;
     }
     if (code == EndTransmissionCode::SUCCESS) {
-        return _endTransmission(CommandStringType::MASTER_TANSMIT, stop);
+        return _endTransmission(CommandStringType::MASTER_TRANSMIT, stop);
     }
     __LDBG_printf("code=%d oavail=%u olen=%u slave=%d master=%d outs=%u ins=%u", code, _out.available(), _out.length(), address, data()._address, flags()._outState, flags()._inState);
     _out.clear();

@@ -13,7 +13,7 @@
 
 inline void SerialTwoWireMaster::begin()
 {
-    __LDBG_assert_printf(data()._address == kNotInitializedAddress, "begin called again without end");
+    __LDBG_assertf(data()._address == kNotInitializedAddress, "begin called again without end");
     data()._address = kMasterAddress;
 }
 

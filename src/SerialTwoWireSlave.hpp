@@ -22,7 +22,7 @@ inline void SerialTwoWireSlave::begin(int address)
 
 inline void SerialTwoWireSlave::end()
 {
-    __LDBG_assert_printf(data()._address != kNotInitializedAddress, "end called without begin");
+    __LDBG_assertf(data()._address != kNotInitializedAddress, "end called without begin");
     _end();
 }
 
@@ -174,7 +174,7 @@ inline SerialTwoWireSlave::Data_t &SerialTwoWireSlave::flags()
 
 inline void SerialTwoWireSlave::_invokeOnReceive(int len)
 {
-    __LDBG_assert_printf(!!_onReceive, "_onReceive=%u callback=%p", !!_onReceive, &_onReceive);
+    __LDBG_assertf(!!_onReceive, "_onReceive=%u callback=%p", !!_onReceive, &_onReceive);
     if (_onReceive) {
         flags()._readFromOut = false;
         _onReceive(len);
@@ -184,7 +184,7 @@ inline void SerialTwoWireSlave::_invokeOnReceive(int len)
 
 inline void SerialTwoWireSlave::_invokeOnRequest()
 {
-    __LDBG_assert_printf(!!_onRequest, "_onRequest=%u callback=%p", !!_onRequest, &_onRequest);
+    __LDBG_assertf(!!_onRequest, "_onRequest=%u callback=%p", !!_onRequest, &_onRequest);
     if (_onRequest) {
         flags()._readFromOut = false;
         _onRequest();
