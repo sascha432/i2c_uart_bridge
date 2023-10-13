@@ -259,7 +259,7 @@ void SerialTwoWireMaster::feed(uint8_t byte)
             _buffer[data()._length++] = byte;
             _buffer[data()._length] = 0;
             switch(getCommandStringType(_buffer)) {
-                case CommandStringType::MASTER_TANSMIT:
+                case CommandStringType::MASTER_TRANSMIT:
 #if I2C_OVER_UART_SLAVE_RESPONSE_MASTER_TRANSMIT
                     flags()._setCommand(flags()._outIsFilling() ? CommandType::SLAVE_RESPONSE : CommandType::MASTER_TRANSMIT);
 #else
